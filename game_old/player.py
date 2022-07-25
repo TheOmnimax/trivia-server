@@ -4,6 +4,10 @@ class Player:
     self.name = name
     self.score = start_score
 
+# IMPLEMENT THIS
+def addScore(player: Player, new_score: int):
+  player.score = new_score
+
 class TimedPlayer(Player):
   def __init__(self, id: str, name: str = '', start_score: int = 0):
     super().__init__(id, name, start_score)

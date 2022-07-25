@@ -1,16 +1,17 @@
 from google.cloud import datastore
 from tools.randomization import genCode
 
-from .base_models import *
-from .category_dao import CategoryDAO
 from .shared_functions import DatastoreDAO
+# from .category_dao import CategoryDAO
+from . import category_dao
+from mvc.trivia.model import QuestionData
 
 class QuestionsDAO(DatastoreDAO):
   def __init__(self, client: datastore.Client):
     self._client = client
   
-  def _genKey(self):
-    return super()._genKey('question', 16)
+  # def _genKey(self):
+  #   return super()._genKey('question', 16)
   
   def _genUniqueKey(self):
     return super()._genUniqueKey('question', 16)
@@ -72,6 +73,13 @@ class QuestionsDAO(DatastoreDAO):
           all_entities[entity_id] = entity
     return list(all_entities.values())
 
+  def getAllQuestions(self) -> list[QuestionData]:
+    query = self._client.query(kind='question')
+    raw_data = list(query.fetch())
+
+    return [self._rawToQuestion(d) for d in raw_data]
+
+
   def getQuestionsFromCat(self, cat_id: str) -> list[QuestionData]:
     results_raw = self._getRawQuestionsFromCat(cat_id=cat_id)
     results = [self._rawToQuestion(d) for d in results_raw]
@@ -87,7 +95,7 @@ class QuestionsDAO(DatastoreDAO):
     return list(question_data.values())
 
   def addQuestion(self, question_data: AddQuestionData):
-    category_dao = CategoryDAO(self._client)
+    # category_dao = CategoryDAO(self._client)
     existing_cats = category_dao.existsMulti(question_data.categories) # So it only adds categories that currently exist
 
     question_key = self._genUniqueKey()

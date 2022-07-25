@@ -1,4 +1,4 @@
-from game.doas import QuestionUpdateData, QuestionsDAO, QuestionData, AddQuestionData
+from game_old.doas import QuestionUpdateData, QuestionsDAO, QuestionData, AddQuestionData
 from tools.json_tools import JsonConverter
 
 from google.cloud import datastore

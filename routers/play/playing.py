@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends
-from game.room import Game, GameRoom
-from game.memory_storage import room_storage
+from game_old.room import Game, GameRoom
+from game_old.memory_storage import room_storage
 from tools.randomization import genCode
 
 from pydantic import BaseModel
-from ..main import getClient
+from daos.utils import getClient
 
 router = APIRouter()
 

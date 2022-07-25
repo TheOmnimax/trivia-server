@@ -2,22 +2,17 @@ from html import entities
 from google.cloud import datastore
 from tools.randomization import genCode
 
-from .base_models import *
 from .question_dao import QuestionsDAO
 from .shared_functions import DatastoreDAO
 # TODO: QUESTION: Why does the above work, but not the one below?
 # from .shared_functions import *
 
-class CategoryData(BaseModel):
-  label: str
-  id: str
-
 class CategoryDAO(DatastoreDAO):
   def __init__(self, client: datastore.Client):
     self._client = client
 
-  def _genKey(self):
-    return super()._genKey('category', 16)
+  # def _genKey(self):
+  #   return super()._genKey('category', 16)
   
   def _genUniqueKey(self):
     return super()._genUniqueKey('category', 16)
@@ -75,9 +70,16 @@ class CategoryDAO(DatastoreDAO):
     question_dao = QuestionsDAO(client=self._client)
     question_dao.deleteCatFromQuestions(id)
 
-  
   def deleteCats(self, ids: list[str]):
     cat_keys = [self._assembleKey(id) for id in ids]
     self._client.delete_multi(cat_keys)
     question_dao = QuestionsDAO(client=self._client)
     question_dao.deleteCatsFromQuestions(ids)
+  
+  def updateCat(self, newData: CategoryData):
+    cat_key = self._assembleKey(id=newData.id)
+    cat_entity = datastore.Entity(key=cat_key)
+    cat_entity.update({
+      'label': newData.label
+    })
+    self._client.put(cat_entity)

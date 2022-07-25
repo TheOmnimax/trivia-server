@@ -3,7 +3,7 @@ from tools.json_tools import JsonConverter
 from fastapi import HTTPException
 import json
 import logging
-from game.room import GameRoom
+from game_old.room import GameRoom
 from enum import Enum
 
 class GameError(Enum):

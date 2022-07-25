@@ -1,14 +1,14 @@
 from typing import Optional
 from fastapi import APIRouter, Depends
-from game.doas import QuestionData, QuestionsDAO, QuestionUpdateData, AddQuestionData
+from daos import QuestionData, QuestionsDAO, QuestionUpdateData, AddQuestionData
 
 from pydantic import BaseModel
-from ..main import getClient
+from daos.utils import getClient
 
 router = APIRouter()
 
 class GetQuestions(BaseModel):
-  categories: list[str]
+  categories: Optional[list[str]]
 
 class DeleteQuestion(BaseModel):
   id: str
@@ -16,7 +16,12 @@ class DeleteQuestion(BaseModel):
 @router.post('/get-questions')
 async def getQuestions(data: GetQuestions, client = Depends(getClient)):
   question_dao = QuestionsDAO(client=client)
-  question_data = question_dao.getQuestionsFromCats(cat_ids=data.categories)
+  print(data.categories)
+  if data.categories == None:
+    print('Getting all')
+    question_data = question_dao.getAllQuestions()
+  else:
+    question_data = question_dao.getQuestionsFromCats(cat_ids=data.categories)
   return [q.__dict__ for q in question_data]
 
 @router.post('/add-question')

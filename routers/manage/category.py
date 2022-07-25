@@ -1,9 +1,9 @@
 from typing import Optional
 from fastapi import APIRouter, Depends
-from game.doas import QuestionData, QuestionsDAO, QuestionUpdateData, AddQuestionData, CategoryDAO
+from daos import QuestionData, QuestionsDAO, QuestionUpdateData, AddQuestionData, CategoryDAO, CategoryData
 
 from pydantic import BaseModel
-from ..main import getClient
+from daos.utils import getClient
 
 router = APIRouter()
 
@@ -30,3 +30,7 @@ async def deleteCategory(data: CategoryId, client = Depends(getClient)):
   category_dao = CategoryDAO(client=client)
   category_dao.deleteCat(data.id)
 
+@router.post('/update-category')
+async def updateCategory(data: CategoryData, client = Depends(getClient)):
+  category_dao = CategoryDAO(client=client)
+  category_dao.updateCat(data)

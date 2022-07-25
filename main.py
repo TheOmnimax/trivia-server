@@ -11,6 +11,7 @@ from google.cloud import datastore
 
 from fastapi import FastAPI, APIRouter
 from play_routers import playing
+from manage_routers import category, question
 
 client = google.cloud.logging.Client()
 client.setup_logging()
@@ -52,6 +53,8 @@ app.add_middleware(
 
 
 app.include_router(playing.router)
+app.include_router(category.router)
+app.include_router(question.router)
 
 if __name__ == '__main__':
   app.run(host='127.0.0.1', port=8080, debug=True)
