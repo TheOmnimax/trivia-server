@@ -1,6 +1,6 @@
 from typing import Optional
 from fastapi import APIRouter, Depends
-from daos import QuestionData, QuestionsDAO, QuestionUpdateData, AddQuestionData, CategoryDAO, CategoryData
+from daos import CategoryDAO, CategoryData
 
 from pydantic import BaseModel
 from daos.utils import getClient

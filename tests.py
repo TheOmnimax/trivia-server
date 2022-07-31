@@ -1,5 +1,7 @@
-from game_old.doas import QuestionUpdateData, QuestionsDAO, QuestionData, AddQuestionData
 from tools.json_tools import JsonConverter
+from daos import CategoryDAO, QuestionsDAO
+from domains.trivia.schemas import QuestionUpdate, NewQuestionSchema, QuestionSchema
+from gcloud_utils.datastore import GcloudMemoryStorage
 
 from google.cloud import datastore
 from os import environ
@@ -23,7 +25,7 @@ def getQuestion():
 
 def addQuestion():
   question_dao = QuestionsDAO(client=datastore.Client())
-  question_dao.addQuestion(AddQuestionData(
+  question_dao.addQuestion(NewQuestionSchema(
     label='Hi',
     categories=[1,2],
     choices=['One', 'Two'],
@@ -36,6 +38,24 @@ def getQuestionsFromCats():
   question_data = question_dao.getQuestionsFromCats(['1', '2', 'Video games'])
   print(question_data)
 
+def gcloudCreate():
+  gcloud_ms = GcloudMemoryStorage(
+    client=datastore.Client(),
+    kind='test'
+  )
+  gcloud_ms.create({'test': True})
+
+def gcloudUpdate():
+  gcloud_ms = GcloudMemoryStorage(
+    client=datastore.Client(),
+    kind='test'
+  )
+  def func(data):
+    data['test'] = 'Changed!'
+  gcloud_ms.getAndSet(
+    id='t288rl',
+    new_val_func=func
+  )
 
 if __name__ == '__main__':
-  getQuestionsFromCats()
+  gcloudUpdate()

@@ -4,7 +4,8 @@ from tools.randomization import genCode
 from .shared_functions import DatastoreDAO
 # from .category_dao import CategoryDAO
 from . import category_dao
-from mvc.trivia.model import QuestionData
+from domains.trivia.model import QuestionData
+from domains.trivia.schemas import NewQuestionSchema, QuestionSchema, QuestionUpdate
 
 class QuestionsDAO(DatastoreDAO):
   def __init__(self, client: datastore.Client):
@@ -94,7 +95,7 @@ class QuestionsDAO(DatastoreDAO):
           question_data[q.id] = q
     return list(question_data.values())
 
-  def addQuestion(self, question_data: AddQuestionData):
+  def addQuestion(self, question_data: NewQuestionSchema):
     # category_dao = CategoryDAO(self._client)
     existing_cats = category_dao.existsMulti(question_data.categories) # So it only adds categories that currently exist
 
@@ -113,7 +114,7 @@ class QuestionsDAO(DatastoreDAO):
     question_entity.update(update_dict)
     self._client.put(question_entity)
 
-  def updateQuestion(self, question_data: QuestionUpdateData):
+  def updateQuestion(self, question_data: QuestionUpdate):
     question_key = self._client.key('question', question_data.id)
     entity = datastore.Entity(key=question_key)
 

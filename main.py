@@ -10,16 +10,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from google.cloud import datastore
 
 from fastapi import FastAPI, APIRouter
-from play_routers import playing
-from manage_routers import category, question
+from routers.manage import category, question
+from routers.play import playing
+from gcloud_utils.datastore import GcloudMemoryStorage
+from dependencies import dependencies
 
 client = google.cloud.logging.Client()
 client.setup_logging()
 
-datastore_client = datastore.Client()
 
-def getClient():
-  return datastore_client
 
 # TODO: Set categories as labels
 app = FastAPI()

@@ -4,6 +4,7 @@ from trivia.model import QuestionData, CategoryData
 from daos.category_dao import CategoryDAO
 from daos.question_dao import QuestionsDAO
 import random
+from tools.randomization import genUniqueCode
 
 class TriviaGameError(Exception):
   pass
@@ -14,11 +15,11 @@ def getRandomQuestions(categories: list[CategoryData], num_rounds: int, question
   rand_ints = random.sample(range(0, len(question_data)), num_rounds)
   return [question_data[i] for i in rand_ints]
 
-def newGame(id: str, players: list[Player], categories: list[CategoryData], num_rounds: int, question_dao: QuestionsDAO):
+def newGame(categories: list[CategoryData], question_dao: QuestionsDAO, num_rounds: int = 10) -> TriviaGame:
   questions = getRandomQuestions(categories=categories, num_rounds=num_rounds, question_dao=question_dao)
   return TriviaGame(
-    id=id,
-    players=players,categories=categories,
+    players=[],
+    categories=categories,
     num_rounds=num_rounds,
     questions=questions
   )
@@ -30,6 +31,12 @@ def addCategories(game: TriviaGame, categories: list[CategoryData]):
 
 # def addQuestions(game: TriviaGame, questions: list[QuestionData]):
 #   game.questions += questions
+
+def addPlayer(game: TriviaGame, name: str):
+  existing_codes = [player.id for player in game.players]
+  id = genUniqueCode(6, existing_codes)
+  game.players.append(Player(id=id, name=name))
+  return id
 
 def nextQuestion(game: TriviaGame) -> int: # Will probably never need the return value, but it is here if it is needed
   if game.question_index < len(game.questions): # Only add if there are remaining questions
@@ -43,21 +50,21 @@ def getQuestion(game: TriviaGame) -> QuestionData:
   if game.question_index < len(game.questions): # Only return if there are remaining questions
     return game.questions[game.question_index]
 
-def addRoundTime(game: TriviaGame, player: Player, time: int):
-  game.current_round_times[player] = time
+def addRoundTime(game: TriviaGame, player_id: str, time: int): # How much time has passed for the player so far
+  game.current_round_times[player_id] = time
 
-def playerCorrect(game: TriviaGame, player: Player, time: int):
-  if player not in game.complete_players:
-    game.complete_players.append(player)
-    game.current_round_times[player] = time
+def makePlayerCorrect(game: TriviaGame, player_id: str, time: int):
+  if player_id not in game.complete_players:
+    game.complete_players.append(player_id)
+    game.current_round_times[player_id] = time
     if time < game.winning_time:
       game.winning_time = time
 
-def playerWrong(game: TriviaGame, player: Player):
-  if player not in game.complete_players:
-    game.complete_players.append(player)
+def playerWrong(game: TriviaGame, player_id: str):
+  if player_id not in game.complete_players:
+    game.complete_players.append(player_id)
 
-def playerCheckin(game: TriviaGame, player: Player, time: int):
+def playerCheckin(game: TriviaGame, player_id: str, time: int):
   """Takes the player and their current time so far, and determines if their time has run out so far, based on the winning time so far.
 
   Args:
@@ -65,8 +72,8 @@ def playerCheckin(game: TriviaGame, player: Player, time: int):
       player (Player): Player checking in
       time (int): How much time has passed for the player so far
   """
-  if (time > game.winning_time) and (player not in game.complete_players):
-    game.complete_players.append(player)
+  if (time > game.winning_time) and (player_id not in game.complete_players):
+    game.complete_players.append(player_id)
     
 
 def roundComplete(game: TriviaGame) -> bool:
@@ -87,7 +94,7 @@ def roundComplete(game: TriviaGame) -> bool:
 
 
 def completeRound(game: TriviaGame):
-  if roundComplete(game):
+  if roundComplete(game) and (len(game.round_winners) < game.question_index + 1): # If the round is complete, and the round winners have not been calculated yet
     # Get best time
     current_round_times = game.current_round_times
     best_time = min(current_round_times.values())
@@ -109,5 +116,8 @@ def completeRound(game: TriviaGame):
     game.winning_time = None
     game.complete_players = []
     game.current_round_times = []
-    nextQuestion(game)
-  
+    # nextQuestion(game)
+
+
+def getRoundResults(game: TriviaGame) -> RoundData:
+  return game.round_winners[game.question_index]

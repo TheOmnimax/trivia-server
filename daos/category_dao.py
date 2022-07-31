@@ -4,6 +4,7 @@ from tools.randomization import genCode
 
 from .question_dao import QuestionsDAO
 from .shared_functions import DatastoreDAO
+from domains.trivia.model import CategoryData
 # TODO: QUESTION: Why does the above work, but not the one below?
 # from .shared_functions import *
 
@@ -49,9 +50,21 @@ class CategoryDAO(DatastoreDAO):
     entities = list(query.fetch())
     return [CategoryData(label=e['label'], id=e.key.name) for e in entities]
   
-  def getLabels(self, ids: list[str]) -> list[str]:
+  def _getCatsfromEntities(self, entities: list[datastore.Entity]):
+    return [CategoryData(label=e['label'], id=e.key.name) for e in entities]
+
+  def _getCatEntitiesFromIds(self, ids: list[str]) -> datastore.Entity:
     keys = [self._assembleKey(id) for id in ids]
     data = self._client.get_multi(keys=keys)
+    return data
+  
+  def getCatsFromIds(self, ids: list[str]) -> list[CategoryData]:
+    entities = self._getCatEntitiesFromIds(ids=ids)
+    categories = self._getCatsfromEntities(entities)
+    return categories
+
+  def getLabels(self, ids: list[str]) -> list[str]:
+    data = self._getCatEntitiesFromIds(ids=ids)
     return [l['label'] for l in data]
   
   def addCat(self, label: str, parents: list[str] = [], children: list[str] = []):

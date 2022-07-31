@@ -22,6 +22,6 @@ class TriviaGame(Game):
   question_index: int = 0
   round_winners: list[RoundData] = []
   winning_time: Optional[int] # Lowest time so far. 
-  complete_players: list[Player] = []
-  current_round_times: dict[Player, int] = []
+  complete_players: list[str] = []
+  current_round_times: dict[str, int] = []
 

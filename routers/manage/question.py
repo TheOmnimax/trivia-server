@@ -1,7 +1,7 @@
 from typing import Optional
 from fastapi import APIRouter, Depends
-from daos import QuestionData, QuestionsDAO, QuestionUpdateData, AddQuestionData
-
+from daos import QuestionsDAO
+from domains.trivia.schemas import QuestionUpdate, NewQuestionSchema, QuestionSchema
 from pydantic import BaseModel
 from daos.utils import getClient
 
@@ -25,13 +25,13 @@ async def getQuestions(data: GetQuestions, client = Depends(getClient)):
   return [q.__dict__ for q in question_data]
 
 @router.post('/add-question')
-async def updateQuestion(data: AddQuestionData, client = Depends(getClient)):
+async def updateQuestion(data: NewQuestionSchema, client = Depends(getClient)):
   question_dao = QuestionsDAO(client=client)
   question_dao.addQuestion(question_data=data)
 
 
 @router.post('/update-question')
-async def updateQuestion(data: QuestionUpdateData, client = Depends(getClient)):
+async def updateQuestion(data: QuestionUpdate, client = Depends(getClient)):
   question_dao = QuestionsDAO(client=client)
   question_dao.updateQuestion(question_data=data)
 
