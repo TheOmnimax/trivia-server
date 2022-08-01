@@ -1,9 +1,10 @@
 
 from google.cloud import datastore
+from pydantic import validate_arguments
 from daos.category_dao import CategoryDAO
 from daos.question_dao import QuestionsDAO
 from dependencies.model import AllRetrieval
-from model import QuestionRetrieval
+from dependencies.model import QuestionRetrieval
 from gcloud_utils.datastore import GcloudMemoryStorage
 
 datastore_client = datastore.Client()
@@ -23,6 +24,7 @@ def questionRetrieval() -> QuestionRetrieval:
     memory_storage=memory_storage
   )
 
+@validate_arguments(config=dict(arbitrary_types_allowed=True))
 def allRetrieval() -> AllRetrieval:
   return AllRetrieval(
     question_dao=question_dao,

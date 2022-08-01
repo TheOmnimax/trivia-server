@@ -1,3 +1,2 @@
-import imp
 from dependencies.dependencies import *
-from model import *
+from dependencies.model import *

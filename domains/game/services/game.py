@@ -1,10 +1,9 @@
-from game.model import Game, Player, GameRoom
-from domains.game.services import game as game_services, player as player_services
+from domains.game.model import Game, Player, GameRoom
+from domains.game.services import player as player_services
 def createGameRoom(host_player: Player):
-  host_player = game_services.createPlayer()
   return GameRoom(
     host_id=host_player.id,
-    members=[host_player]
+    members={host_player.id: host_player}
   )
 
 

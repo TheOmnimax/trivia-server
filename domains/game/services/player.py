@@ -1,4 +1,4 @@
-from model import Player
+from domains.game.model import Player
 from tools.randomization import genUniqueCode
 
 def createPlayer(name: str, base_score: int = 0, code_length: int = 6, existing_ids: list[str] = []) -> Player:

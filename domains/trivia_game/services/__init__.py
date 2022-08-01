@@ -1,1 +1,1 @@
-from trivia_game import *
+from .trivia_game import *

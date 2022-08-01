@@ -1,1 +1,1 @@
-from services.trivia_game import *
+from .services.trivia_game import *

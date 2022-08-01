@@ -24,6 +24,24 @@ class GcloudMemoryStorage:
     self._lock = threading.Lock()
     self._json_converter = JsonConverter(skipped_keys=skipped_keys)
   
+  def transaction(self, id: str, new_val_func):
+    key = self._client.key(self._kind, id)
+    with self._client.transaction():
+      entity = self._client.get(key)
+      server_data = self._json_converter.jsonToBaseModel(dict(entity))
+      print('id:', id)
+      print(server_data)
+      if (server_data == None):
+        return None
+      else:
+        data = new_val_func(server_data)
+        print('New put:')
+        print(server_data)
+        entity = datastore.Entity(key)
+        entity.update(self._json_converter.baseModelToJson(server_data))
+        self._client.put(entity)
+        return data
+  
   def exists(self, id: str) -> bool:
     key = self._client.key(self._kind, id)
     if self._client.get(key) == None:
@@ -35,7 +53,7 @@ class GcloudMemoryStorage:
     code = genCode(self._code_size)
     while exists(code):
       code = genCode(self._code_size)
-    dict_obj = self._json_converter.objToJson(obj)
+    dict_obj = self._json_converter.baseModelToJson(obj)
     key = self._client.key(self._kind, code)
     entity = datastore.Entity(key=key)
     entity.update(dict_obj)
@@ -44,11 +62,13 @@ class GcloudMemoryStorage:
         
   def get(self, id: str):
     key = self._client.key(self._kind, id)
+    print('Working key:')
+    print(key)
     entity = self._client.get(key)
     if entity == None:
       return None
     else:
-      return self._json_converter.jsonToObj(dict(entity))
+      return self._json_converter.jsonToBaseModel(dict(entity))
   
   def getAndSet(self, id: str, predicate=None, new_val_func=None):
     try:

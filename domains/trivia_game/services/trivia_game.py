@@ -1,6 +1,6 @@
-from model import TriviaGame, RoundData
-from game.model import Player
-from trivia.model import QuestionData, CategoryData
+from domains.trivia_game.model import TriviaGame, RoundData
+from domains.game.model import Player
+from domains.trivia.model import QuestionData, CategoryData
 from daos.category_dao import CategoryDAO
 from daos.question_dao import QuestionsDAO
 import random
@@ -12,16 +12,18 @@ class TriviaGameError(Exception):
 def getRandomQuestions(categories: list[CategoryData], num_rounds: int, question_dao: QuestionsDAO) -> list[QuestionData]:
   cat_ids = [c.id for c in categories]
   question_data = question_dao.getQuestionsFromCats(cat_ids=cat_ids)
-  rand_ints = random.sample(range(0, len(question_data)), num_rounds)
+  num_questions = len(question_data)
+  rand_ints = random.sample(range(0, min(num_rounds, num_questions)), num_questions)
   return [question_data[i] for i in rand_ints]
 
 def newGame(categories: list[CategoryData], question_dao: QuestionsDAO, num_rounds: int = 10) -> TriviaGame:
   questions = getRandomQuestions(categories=categories, num_rounds=num_rounds, question_dao=question_dao)
+  # TODO: Shuffle choices
   return TriviaGame(
     players=[],
     categories=categories,
+    questions=questions,
     num_rounds=num_rounds,
-    questions=questions
   )
 
 # TODO: QUESTION: Is there an inheritance for functions so I don't have to have the same parameters each time
@@ -49,6 +51,10 @@ def getRound(game: TriviaGame) -> int:
 def getQuestion(game: TriviaGame) -> QuestionData:
   if game.question_index < len(game.questions): # Only return if there are remaining questions
     return game.questions[game.question_index]
+
+def getCorrectValue(game: TriviaGame) -> int:
+  question = getQuestion(game)
+  return question.correct
 
 def addRoundTime(game: TriviaGame, player_id: str, time: int): # How much time has passed for the player so far
   game.current_round_times[player_id] = time

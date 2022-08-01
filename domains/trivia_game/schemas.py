@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
-from model import CategoryData
+from domains.trivia_game.model import CategoryData
 from domains.trivia_game.model import RoundData
 
 class CategorySchema(CategoryData):
@@ -54,7 +54,10 @@ class AnswerQuestion(PlayerCheckinSchema):
 class AnswerResponse(BaseModel):
   player_correct: bool
   
-
-class RoundStatusResponse(BaseModel):
+class PlayerCheckinResponse(BaseModel):
+  question: str
+  choices: list[str]
   round_complete: bool
-  round_data: Optional[RoundData]
+  correct: Optional[int]
+  winners: Optional[list[str]]
+  is_winner: Optional[bool]

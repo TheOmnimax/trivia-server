@@ -22,7 +22,7 @@ async def createRoom(data: CreateRoomSchema, mem_store: GcloudMemoryStorage = De
     host_id=host_player.id
   )
 
-@router.post('/new_game')
+@router.post('/new-game')
 async def newGame(data: CreateGame, ar: dependencies.AllRetrieval = Depends(dependencies.allRetrieval)):
   room_code = data.room_code
 
@@ -42,7 +42,7 @@ async def newGame(data: CreateGame, ar: dependencies.AllRetrieval = Depends(depe
       successful=True
     )
   
-  response = mem_store.getAndSet(id=room_code, new_val_func=cg)
+  response = mem_store.transaction(id=room_code, new_val_func=cg)
   return response
 
 @router.post('/add-player')
@@ -52,6 +52,6 @@ async def addPlayer(data: JoinGameSchema, mem_store: GcloudMemoryStorage = Depen
   def ap(game_room: GameRoom):
     player_id = tg_services.addPlayer(new_player) # TODO: Update with game
     return JoinGameResponse(player_id=player_id)
-  response = mem_store.getAndSet(id=room_code, new_val_func=ap)
+  response = mem_store.transaction(id=room_code, new_val_func=ap)
   return response
 

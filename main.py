@@ -11,7 +11,7 @@ from google.cloud import datastore
 
 from fastapi import FastAPI, APIRouter
 from routers.manage import category, question
-from routers.play import playing
+from routers.play import creation, playing
 from gcloud_utils.datastore import GcloudMemoryStorage
 from dependencies import dependencies
 
@@ -51,6 +51,7 @@ app.add_middleware(
 #   return await call_next(request)
 
 
+app.include_router(creation.router)
 app.include_router(playing.router)
 app.include_router(category.router)
 app.include_router(question.router)

@@ -1,6 +1,9 @@
 import logging
+from types import NoneType
 
 from pydantic import BaseModel
+
+from domains.game.model import GameRoom
 
 class JsonConverter:
   def __init__(self, skipped_keys: list = []) -> None:
@@ -8,7 +11,7 @@ class JsonConverter:
     self._layer = 0
     self._skipped_keys = skipped_keys # These are for var names that are heavily nested, and can be skipped to save time
   
-  def addAcceptedTag(self, class_type: type):
+  def _addAcceptedTag(self, class_type: type):
     type_str = class_type.__name__
     self._accepted_tags[type_str] = class_type
 
@@ -98,7 +101,43 @@ class JsonConverter:
       logging.error(f'Data:\n{orig}')
       raise TypeError
   
-  # def baseModelToJson(self, data: BaseModel):
-  #   print(data.__dict__)
-  #   pass
-
+  # def _dictForModel(self, data: dict):
+  #   for key in data:
+  #     value = data[key]
+  #     val_type = type(value)
+  #     if val_type == dict:
+  #       value = self._dictForModel(value)
+  #     elif val_type not in [int,float,str,bool,NoneType]:
+  #       value = self.baseModelToJson(value)
+  #       data[key] = value
+  #   return data
+  
+  def baseModelToJson(self, data: BaseModel):
+    data_type = type(data)
+    if data_type in [int,float,str,bool,NoneType]:
+      return data
+    elif data_type in [list, set]:
+      return [self.baseModelToJson(d) for d in data]
+    elif data_type == dict:
+      for key in data:
+        data[key] = self.baseModelToJson(data[key])
+      return data
+    else: # Is a BaseModel (hopefully)
+      json_data = data.__dict__
+      self._addAcceptedTag(data_type)
+      data_type_str = data_type.__name__
+      for key in json_data:
+        json_data[key] = self.baseModelToJson(json_data[key])
+      json_data['type'] = data_type_str
+      return json_data
+  
+  def jsonToBaseModel(self, data: dict):
+    for key in data:
+      value = data[key]
+      if type(value) == dict:
+        data[key] = self.jsonToBaseModel(value)
+    if 'type' in data:
+      data_type = self._accepted_tags[data.pop('type')]
+      return data_type.parse_obj(data)
+    else:
+      return data

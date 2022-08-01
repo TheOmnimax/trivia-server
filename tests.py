@@ -1,3 +1,5 @@
+import json
+from dependencies.dependencies import allRetrieval
 from tools.json_tools import JsonConverter
 from daos import CategoryDAO, QuestionsDAO
 from domains.trivia.schemas import QuestionUpdate, NewQuestionSchema, QuestionSchema
@@ -52,10 +54,32 @@ def gcloudUpdate():
   )
   def func(data):
     data['test'] = 'Changed!'
-  gcloud_ms.getAndSet(
+  gcloud_ms.transaction(
     id='t288rl',
     new_val_func=func
   )
 
+def jsonTest():
+  json_converter = JsonConverter()
+  from domains.trivia_game import model as tg_model
+  from domains.game import model as game_model
+  room = game_model.GameRoom(
+    host_id='1',
+    members={
+      '1': game_model.Player(
+        id='1',
+        name='Max'
+      )
+    }
+  )
+  json_data = json_converter.baseModelToJson(room)
+  print(json_data)
+  reconverted = json_converter.jsonToBaseModel(json_data)
+  print(type(reconverted))
+  print(reconverted)
+
+def allRetrievalTest():
+  return allRetrieval()
+
 if __name__ == '__main__':
-  gcloudUpdate()
+  print(allRetrievalTest().__dict__)
