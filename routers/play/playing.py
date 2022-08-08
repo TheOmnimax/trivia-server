@@ -145,7 +145,6 @@ async def answerQuestion(data: AnswerQuestion, mem_store: GcloudMemoryStorage = 
 @router.post('/next-round')
 async def nextRound(data: AdminSchema, mem_store: GcloudMemoryStorage = Depends(dependencies.getMemoryStorage)):
   def nr(game_room: GameRoom):
-    host_id = game_room.host_id
     if game_room.host_id == data.host_id:
       game = game_room.game
       if tg_services.roundComplete(game):
@@ -155,4 +154,4 @@ async def nextRound(data: AdminSchema, mem_store: GcloudMemoryStorage = Depends(
         raise HTTPException(status_code=425, detail='Not yet ready to go to next round.')
     else:
       raise HTTPException(status_code=403, detail='Only the host can go to the next round.')
-  pass
+  return mem_store.transaction(data.room_code, nr)

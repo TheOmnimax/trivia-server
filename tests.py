@@ -1,5 +1,8 @@
 import json
 from dependencies.dependencies import allRetrieval
+from domains.game.model import GameRoom, Player
+from domains.trivia.model import CategoryData, QuestionData
+from domains.trivia_game.model import TriviaGame
 from tools.json_tools import JsonConverter
 from daos import CategoryDAO, QuestionsDAO
 from domains.trivia.schemas import QuestionUpdate, NewQuestionSchema, QuestionSchema
@@ -9,12 +12,12 @@ from google.cloud import datastore
 from os import environ
 
 
-environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'C:\\Users\\maxshaberman\\Documents\\Coding\\Keys\\max-trivia-5a46a7a8eb28.json' # TESTING ONLY
+# environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'C:\\Users\\maxshaberman\\Documents\\Coding\\Keys\\max-trivia-5a46a7a8eb28.json' # TESTING ONLY
 
 def getQuestion():
   question_dao = QuestionsDAO(client=datastore.Client())
   question_data = question_dao.getQuestion('6681294850532578')
-  print(question_data)
+  question_data)
   # question_data.label = 'Which of these is NOT an Eeveelution?'
   # question_dao.updateQuestion(question_data)
 #   json_converter = JsonConverter()
@@ -38,7 +41,6 @@ def addQuestion():
 def getQuestionsFromCats():
   question_dao = QuestionsDAO(client=datastore.Client())
   question_data = question_dao.getQuestionsFromCats(['1', '2', 'Video games'])
-  print(question_data)
 
 def gcloudCreate():
   gcloud_ms = GcloudMemoryStorage(
@@ -81,5 +83,48 @@ def jsonTest():
 def allRetrievalTest():
   return allRetrieval()
 
+def getTestData():
+  return GameRoom(
+    host_id='3p3hw1',
+    members={'3p3hw1': Player(id='3p3hw1', name='', score=0)},
+    game=TriviaGame(
+      players={'3p3hw1': Player(id='3p3hw1', name='', score=0)},
+      categories=[
+        CategoryData(label='Pop culture',
+        id='19g8pnv6jujxzli9')],
+        questions=[
+          QuestionData(
+            label='Which of these is NOT an Eeveelution?',
+            categories=['19g8pnv6jujxzli9', '5eexrj686avgpwvu', 'y1bbpmvitch2kkvk'], choices=['Jolteon', 'Draceon', 'Sylveon', 'Espeon'],
+            shuffle=True,
+            shuffle_skip=None,
+            correct=1,
+            id='6681294850532578')],
+            num_rounds=10,
+            question_index=-1,
+            round_winners=[],
+            winning_time=None,
+            complete_players=[],
+            current_round_times=[])
+  )
+
+def conversionTest():
+  data = getTestData()
+  json_converter = JsonConverter()
+  json_data = json_converter.baseModelToJson(data)
+  print(json_data)
+  reconverted = json_converter.jsonToBaseModel(json_data)
+  print(reconverted)
+
+def memStoreTest():
+  data = getTestData()
+  mem_store = GcloudMemoryStorage(client=datastore.Client(), kind='test1')
+  id = mem_store.create(data)
+
+  def func(game_room: GameRoom):
+    pass
+
+  mem_store.transaction(id, func)
+
 if __name__ == '__main__':
-  print(allRetrievalTest().__dict__)
+  memStoreTest()

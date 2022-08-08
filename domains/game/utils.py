@@ -9,5 +9,3 @@ def shuffle(data: int):
     data[rand_int] = data[i]
     data[i] = hold
   return data
-
-print(random.randint(3, 9))

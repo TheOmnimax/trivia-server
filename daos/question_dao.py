@@ -97,14 +97,16 @@ class QuestionsDAO(DatastoreDAO):
 
   def addQuestion(self, question_data: NewQuestionSchema):
     # category_dao = CategoryDAO(self._client)
-    existing_cats = category_dao.existsMulti(question_data.categories) # So it only adds categories that currently exist
+    print('Category DAO data:')
+    print(category_dao.__dict__)
+    # existing_cats = category_dao.existsMulti(question_data.categories) # So it only adds categories that currently exist
+    # TODO: Fix whatever is going on with this
 
     question_key = self._genUniqueKey()
     question_entity = datastore.Entity(key=question_key)
-    print(question_data)
     update_dict = {
       'label': question_data.label,
-      'categories': existing_cats,
+      'categories': question_data.categories,
       'choices': question_data.choices,
       'shuffle': question_data.shuffle,
       'correct': question_data.correct,
@@ -133,6 +135,9 @@ class QuestionsDAO(DatastoreDAO):
     if question_data.correct != None:
       update_dict['correct'] = question_data.correct
 
+    print('Key:')
+    print(question_key)
+    print(update_dict)
     entity.update(update_dict)
     self._client.put(entity)
   

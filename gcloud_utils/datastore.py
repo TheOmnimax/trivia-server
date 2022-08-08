@@ -14,7 +14,7 @@ from fastapi import HTTPException
 
 from os import environ
 
-environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'C:\\Users\\maxshaberman\\Documents\\Coding\\Keys\\max-trivia-5a46a7a8eb28.json' # TESTING ONLY
+# environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'C:\\Users\\maxshaberman\\Documents\\Coding\\Keys\\max-trivia-5a46a7a8eb28.json' # TESTING ONLY
 
 class GcloudMemoryStorage:
   def __init__(self, client: datastore.Client, kind: str, code_size: int = 6, skipped_keys: list[str] = []):
@@ -28,17 +28,17 @@ class GcloudMemoryStorage:
     key = self._client.key(self._kind, id)
     with self._client.transaction():
       entity = self._client.get(key)
-      server_data = self._json_converter.jsonToBaseModel(dict(entity))
-      print('id:', id)
-      print(server_data)
+      print('Data from server:')
+      print(key)
+      print(entity)
+      server_data = self._json_converter.jsonToBaseModel(entity)
       if (server_data == None):
         return None
       else:
         data = new_val_func(server_data)
-        print('New put:')
-        print(server_data)
         entity = datastore.Entity(key)
-        entity.update(self._json_converter.baseModelToJson(server_data))
+        new_data = self._json_converter.baseModelToJson(server_data)
+        entity.update(new_data)
         self._client.put(entity)
         return data
   
@@ -62,8 +62,6 @@ class GcloudMemoryStorage:
         
   def get(self, id: str):
     key = self._client.key(self._kind, id)
-    print('Working key:')
-    print(key)
     entity = self._client.get(key)
     if entity == None:
       return None

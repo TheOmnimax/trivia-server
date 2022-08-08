@@ -16,9 +16,7 @@ class DeleteQuestion(BaseModel):
 @router.post('/get-questions')
 async def getQuestions(data: GetQuestions, client = Depends(getClient)):
   question_dao = QuestionsDAO(client=client)
-  print(data.categories)
   if data.categories == None:
-    print('Getting all')
     question_data = question_dao.getAllQuestions()
   else:
     question_data = question_dao.getQuestionsFromCats(cat_ids=data.categories)

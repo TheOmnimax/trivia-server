@@ -1,9 +1,14 @@
 import logging
-from types import NoneType
 
 from pydantic import BaseModel
+from google.cloud import datastore
 
-from domains.game.model import GameRoom
+def _isBuiltInType(data):
+  data_type = type(data)
+  if (data_type in [int,float,str,bool]) or (data is None):
+    return True
+  else:
+    return False
 
 class JsonConverter:
   def __init__(self, skipped_keys: list = []) -> None:
@@ -93,7 +98,7 @@ class JsonConverter:
         for key in orig:
           new_dict[key] = self.jsonToObj(orig[key])
         return new_dict
-    elif orig_type in [int,float,str,bool]:
+    elif _isBuiltInType(orig):
       return orig
     else:
       logging.error('Type error:')
@@ -114,7 +119,7 @@ class JsonConverter:
   
   def baseModelToJson(self, data: BaseModel):
     data_type = type(data)
-    if data_type in [int,float,str,bool,NoneType]:
+    if _isBuiltInType(data):
       return data
     elif data_type in [list, set]:
       return [self.baseModelToJson(d) for d in data]
@@ -134,6 +139,8 @@ class JsonConverter:
   def jsonToBaseModel(self, data: dict):
     for key in data:
       value = data[key]
+      if type(value) == datastore.Entity: # Hopefully, I can do away with this at some point
+        value = dict(value)
       if type(value) == dict:
         data[key] = self.jsonToBaseModel(value)
     if 'type' in data:

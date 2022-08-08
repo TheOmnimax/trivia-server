@@ -102,17 +102,20 @@ def roundComplete(game: TriviaGame) -> bool:
 def completeRound(game: TriviaGame):
   if roundComplete(game) and (len(game.round_winners) < game.question_index + 1): # If the round is complete, and the round winners have not been calculated yet
     # Get best time
+    
+    winners = list()
     current_round_times = game.current_round_times
     best_time = min(current_round_times.values())
-    if best_time != game.winning_time: # This should never be true, so if it is, I need to check the code
+    if game.winning_time == None: # No winner this round
+      best_time = 0
+    elif best_time != game.winning_time: # This should never be true, so if it is, I need to check the code
       raise TriviaGameError(f'The set winning time is {game.winning_time}, but the best time saved by players is {best_time}.')
-    
-    # Assign winners
-    winners = []
-    for player in current_round_times:
-      if current_round_times[player] == best_time:
-        winners.append(player)
-    round_data = RoundData(winner=winners, time=best_time)
+    else:
+      # Assign winners
+      for player in current_round_times:
+        if current_round_times[player] == best_time:
+          winners.append(player)
+    round_data = RoundData(winners=winners, time=best_time)
     if len(game.round_winners) > game.question_index: # This should never be true, since the round winners should not be added multiple times for the same round, but it is here if it is needed
       game.round_winners[game.question_index] = round_data
     else:
