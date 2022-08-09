@@ -17,12 +17,12 @@ from os import environ
 # environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'C:\\Users\\maxshaberman\\Documents\\Coding\\Keys\\max-trivia-5a46a7a8eb28.json' # TESTING ONLY
 
 class GcloudMemoryStorage:
-  def __init__(self, client: datastore.Client, kind: str, code_size: int = 6, skipped_keys: list[str] = []):
+  def __init__(self, client: datastore.Client, kind: str, code_size: int = 6, pre_accepted: list[type] = [], skipped_keys: list[str] = []):
     self._client = client
     self._code_size = code_size
     self._kind = kind
     self._lock = threading.Lock()
-    self._json_converter = JsonConverter(skipped_keys=skipped_keys)
+    self._json_converter = JsonConverter(pre_accepted=pre_accepted, skipped_keys=skipped_keys)
   
   def transaction(self, id: str, new_val_func):
     key = self._client.key(self._kind, id)
@@ -31,14 +31,22 @@ class GcloudMemoryStorage:
       print('Data from server:')
       print(key)
       print(entity)
-      server_data = self._json_converter.jsonToBaseModel(entity)
-      if (server_data == None):
+      if (entity == None):
         return None
       else:
+        server_data = self._json_converter.jsonToBaseModel(entity)
+        print('Data collected:')
+        print(server_data)
+        print('Using function:')
+        print(new_val_func)
         data = new_val_func(server_data)
+        print('NEW DATA:')
+        print(server_data)
         entity = datastore.Entity(key)
         new_data = self._json_converter.baseModelToJson(server_data)
         entity.update(new_data)
+        print('NEW ENTITY:')
+        print(entity)
         self._client.put(entity)
         return data
   

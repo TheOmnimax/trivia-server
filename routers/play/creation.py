@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from daos.utils import getClient # TODO: QUESTION: Should this be in the main file, or in daos.utils?
 from gcloud_utils.datastore import GcloudMemoryStorage
@@ -7,6 +7,8 @@ from domains.trivia_game import services as tg_services
 from domains.game.model import Game, GameRoom
 from domains.game import services as game_services
 import dependencies
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import PlainTextResponse
 
 router = APIRouter()
 
@@ -47,11 +49,15 @@ async def newGame(data: CreateGame, ar: dependencies.AllRetrieval = Depends(depe
 
 @router.post('/add-player')
 async def addPlayer(data: JoinGameSchema, mem_store: GcloudMemoryStorage = Depends(dependencies.getMemoryStorage)):
-  room_code = data.room_code
-  new_player = game_services.createPlayer(name=data.player_name)
   def ap(game_room: GameRoom):
-    player_id = tg_services.addPlayer(new_player) # TODO: Update with game
+    player_id = game_services.createMember(game_room, data.player_name)
+    game_services.addMemberToGame(game_room, player_id)
     return JoinGameResponse(player_id=player_id)
-  response = mem_store.transaction(id=room_code, new_val_func=ap)
+  response = mem_store.transaction(id=data.room_code, new_val_func=ap)
+  print('Response:')
+  print(response)
+  if response == None:
+    print('None response')
+    raise HTTPException(status_code=404, detail='Room code not found')
   return response
 

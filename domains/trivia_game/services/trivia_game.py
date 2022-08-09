@@ -34,13 +34,17 @@ def addCategories(game: TriviaGame, categories: list[CategoryData]):
 # def addQuestions(game: TriviaGame, questions: list[QuestionData]):
 #   game.questions += questions
 
-def addPlayer(game: TriviaGame, name: str):
+def addPlayer(game: TriviaGame, player: Player):
   existing_codes = [player.id for player in game.players]
   id = genUniqueCode(6, existing_codes)
-  game.players.append(Player(id=id, name=name))
+  game.players
   return id
 
 def nextQuestion(game: TriviaGame) -> int: # Will probably never need the return value, but it is here if it is needed
+    # Clean up, go to next round
+  game.winning_time = None
+  game.complete_players = []
+  game.current_round_times = []
   if game.question_index < len(game.questions): # Only add if there are remaining questions
     game.question_index += 1
   return game.question_index
@@ -60,15 +64,19 @@ def addRoundTime(game: TriviaGame, player_id: str, time: int): # How much time h
   game.current_round_times[player_id] = time
 
 def makePlayerCorrect(game: TriviaGame, player_id: str, time: int):
+  print('PLAYER RIGHT')
   if player_id not in game.complete_players:
     game.complete_players.append(player_id)
+    print(f'NEW COMPLETE PLAYERS: {game.complete_players}')
     game.current_round_times[player_id] = time
     if time < game.winning_time:
       game.winning_time = time
 
 def playerWrong(game: TriviaGame, player_id: str):
+  print('PLAYER WRONG')
   if player_id not in game.complete_players:
     game.complete_players.append(player_id)
+    print(f'NEW COMPLETE PLAYERS: {game.complete_players}')
 
 def playerCheckin(game: TriviaGame, player_id: str, time: int):
   """Takes the player and their current time so far, and determines if their time has run out so far, based on the winning time so far.
@@ -91,6 +99,7 @@ def roundComplete(game: TriviaGame) -> bool:
   Returns:
       bool: True if the round is complete, and they're ready to move on, and False otherwise
   """
+  print(f'There are {game.players} players, and {game.complete_players} complete players')
   if len(game.players) == len(game.complete_players):
     return True
   elif len(game.players) > len(game.complete_players):
@@ -121,12 +130,8 @@ def completeRound(game: TriviaGame):
     else:
       game.round_winners.append(round_data)
     
-    # Clean up, go to next round
-    game.winning_time = None
-    game.complete_players = []
-    game.current_round_times = []
-    # nextQuestion(game)
+    # nextQuestion(game) # TODO: Add a delay
 
 
 def getRoundResults(game: TriviaGame) -> RoundData:
-  return game.round_winners[game.question_index]
+  return game.round_winners[game.question_index - 1] # TODO: Make so the -1 is unnneccessary

@@ -27,7 +27,7 @@ class QuestionsDAO(DatastoreDAO):
       categories=question_data_raw['categories'],
       choices=question_data_raw['choices'],
       shuffle=question_data_raw['shuffle'],
-      shuffle_skip= question_data_raw['shuffle_skip'] == None  if 'shuffle_skip' in question_data_raw else None,
+      # shuffle_skip= question_data_raw['shuffle_skip'] == None  if 'shuffle_skip' in question_data_raw else None, # TODO: Make this work
       correct=question_data_raw['correct']
     )
     return question_data

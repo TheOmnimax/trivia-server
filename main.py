@@ -3,7 +3,7 @@ logging.getLogger().addHandler(logging.StreamHandler()) # For testing
 
 from os import environ
 
-# environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'C:\\Users\\maxshaberman\\Documents\\Coding\\Keys\\max-trivia-5a46a7a8eb28.json' # TESTING ONLY
+environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'C:\\Users\\maxshaberman\\Documents\\Coding\\Keys\\max-trivia-5a46a7a8eb28.json' # TESTING ONLY
 
 import google.cloud.logging
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,6 +14,8 @@ from routers.manage import category, question
 from routers.play import creation, playing
 from gcloud_utils.datastore import GcloudMemoryStorage
 from dependencies import dependencies
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import PlainTextResponse
 
 client = google.cloud.logging.Client()
 client.setup_logging()
@@ -28,8 +30,8 @@ router = APIRouter()
 origins = [
     'http://localhost',
     'http://localhost:8080',
-    'http://localhost:64965',
-    'https://localhost:64965',
+    'http://localhost:56147',
+    'https://localhost:56147',
     'https://max-trivia.web.app',
     'http://max-trivia.web.app',
     'https://trivia-question-manager.web.app',
@@ -43,6 +45,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    return PlainTextResponse(str(exc), status_code=400)
 
 # @app.middleware('http')
 # async def mw(request: Request, call_next):

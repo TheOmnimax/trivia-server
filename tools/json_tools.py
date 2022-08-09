@@ -11,8 +11,10 @@ def _isBuiltInType(data):
     return False
 
 class JsonConverter:
-  def __init__(self, skipped_keys: list = []) -> None:
+  def __init__(self, pre_accepted: list[type] = [], skipped_keys: list = []) -> None:
     self._accepted_tags = dict() # Will store all of the types used, so the dicts can be converted back to those types
+    for t in pre_accepted:
+      self._accepted_tags[t.__name__] = t
     self._layer = 0
     self._skipped_keys = skipped_keys # These are for var names that are heavily nested, and can be skipped to save time
   
@@ -144,7 +146,11 @@ class JsonConverter:
       if type(value) == dict:
         data[key] = self.jsonToBaseModel(value)
     if 'type' in data:
-      data_type = self._accepted_tags[data.pop('type')]
+      type_string = data.pop('type')
+      if type_string not in self._accepted_tags:
+        print('Accepted tags:')
+        print(self._accepted_tags)
+      data_type = self._accepted_tags[type_string]
       return data_type.parse_obj(data)
     else:
       return data
