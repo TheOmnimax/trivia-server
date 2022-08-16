@@ -25,28 +25,19 @@ class GcloudMemoryStorage:
     self._json_converter = JsonConverter(pre_accepted=pre_accepted, skipped_keys=skipped_keys)
   
   def transaction(self, id: str, new_val_func):
+    if (id == '' or id == None):
+      return None
     key = self._client.key(self._kind, id)
     with self._client.transaction():
       entity = self._client.get(key)
-      print('Data from server:')
-      print(key)
-      print(entity)
       if (entity == None):
         return None
       else:
         server_data = self._json_converter.jsonToBaseModel(entity)
-        print('Data collected:')
-        print(server_data)
-        print('Using function:')
-        print(new_val_func)
         data = new_val_func(server_data)
-        print('NEW DATA:')
-        print(server_data)
         entity = datastore.Entity(key)
         new_data = self._json_converter.baseModelToJson(server_data)
         entity.update(new_data)
-        print('NEW ENTITY:')
-        print(entity)
         self._client.put(entity)
         return data
   

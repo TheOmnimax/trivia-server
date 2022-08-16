@@ -147,9 +147,9 @@ class JsonConverter:
         data[key] = self.jsonToBaseModel(value)
     if 'type' in data:
       type_string = data.pop('type')
-      if type_string not in self._accepted_tags:
-        print('Accepted tags:')
-        print(self._accepted_tags)
+      # if type_string not in self._accepted_tags:
+      #   print('Accepted tags:')
+      #   print(self._accepted_tags)
       data_type = self._accepted_tags[type_string]
       return data_type.parse_obj(data)
     else:

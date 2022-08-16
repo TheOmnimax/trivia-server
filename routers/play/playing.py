@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from domains.trivia_game.services.trivia_game import getQuestion, roundComplete
 from domains.trivia_game.model import TriviaGame
-from domains.trivia_game.schemas import AdminSchema, AnswerQuestion, AnswerResponse, PlayerCheckinResponse, PlayerCheckinSchema, PlayerSchema, RoomSchema
+from domains.trivia_game.schemas import AdminSchema, AnswerQuestion, AnswerResponse, GameCompleteResponse, PlayerCheckinResponse, PlayerCheckinSchema, PlayerSchema, ResultsResponse, RoomSchema, StillPlaying
 from tools.randomization import genCode
 from gcloud_utils.datastore import GcloudMemoryStorage
 from domains.trivia_game import services as tg_services
@@ -33,19 +33,30 @@ def _roundReturn(game: TriviaGame, player_id: str) -> PlayerCheckinResponse:
   if tg_services.roundComplete(game):
     tg_services.completeRound(game)
     winners = tg_services.getRoundResults(game).winners
-    winner_names = [p.name for p in winners]
-    is_winner = player_id in [p.id for p in winners]
-    return PlayerCheckinResponse(
-      question=current_question.label,
-      choices=current_question.choices,
-      round_complete=True,
-      correct=tg_services.getCorrectValue(game),
-      winners=winner_names,
-      is_winner=is_winner
-    )
-    # TODO: Add tg_services.nextQuestion(game)
+    winner_data = [game.players[p] for p in winners]
+    winner_names = [p.name for p in winner_data]
+    is_winner = player_id in [p.id for p in winner_data]
+
+    if game.game_complete:
+      print('Game complete')
+      return GameCompleteResponse(
+        correct=tg_services.getCorrectValue(game),
+        winners=winner_names,
+        is_winner=is_winner,
+      )
+    else:
+      print('Next round')
+      return StillPlaying(
+        question=current_question.label,
+        choices=current_question.choices,
+        round_complete=True,
+        correct=tg_services.getCorrectValue(game),
+        winners=winner_names,
+        is_winner=is_winner,
+      )
+      # TODO: Add tg_services.nextQuestion(game)
   else:
-    return PlayerCheckinResponse(
+    return StillPlaying(
       question=current_question.label,
       choices=current_question.choices,
       round_complete=False
@@ -155,3 +166,21 @@ async def nextRound(data: AdminSchema, mem_store: GcloudMemoryStorage = Depends(
     else:
       raise HTTPException(status_code=403, detail='Only the host can go to the next round.')
   return mem_store.transaction(data.room_code, nr)
+
+@router.post('/get-results')
+async def getResults(data: RoomSchema, mem_store: GcloudMemoryStorage = Depends(dependencies.getMemoryStorage)):
+  def gr(game_room: GameRoom):
+    game = game_room.game
+    scores = game.final_scores
+    named_scores = dict()
+    print('Scores:')
+    print(scores)
+    for player_id in scores:
+      score = scores[player_id]
+      player = game.players[player_id].name
+      named_scores[player] = score
+    return ResultsResponse(
+      scores=named_scores,
+      winners=tg_services.getWinnerNames(game)
+    )
+  return mem_store.transaction(data.room_code, gr)

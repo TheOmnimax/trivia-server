@@ -96,9 +96,6 @@ class QuestionsDAO(DatastoreDAO):
     return list(question_data.values())
 
   def addQuestion(self, question_data: NewQuestionSchema):
-    # category_dao = CategoryDAO(self._client)
-    print('Category DAO data:')
-    print(category_dao.__dict__)
     # existing_cats = category_dao.existsMulti(question_data.categories) # So it only adds categories that currently exist
     # TODO: Fix whatever is going on with this
 
@@ -135,9 +132,6 @@ class QuestionsDAO(DatastoreDAO):
     if question_data.correct != None:
       update_dict['correct'] = question_data.correct
 
-    print('Key:')
-    print(question_key)
-    print(update_dict)
     entity.update(update_dict)
     self._client.put(entity)
   

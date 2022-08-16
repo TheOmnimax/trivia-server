@@ -1,10 +1,10 @@
-from typing import Optional
+from typing import Optional, Dict, List
 from pydantic import BaseModel
 from domains.game.model import Game, Player
 from domains.trivia.model import QuestionData, CategoryData
 
 class RoundData(BaseModel):
-  winners: list[Player]
+  winners: list[str]
   time: int
 
 
@@ -25,13 +25,16 @@ class TriviaGame(Game):
 
   Once length of "complete_players" matches length of "players", it means all players have either answered the question, or their time has gome passed the "winning_time", so the round is over. Once that happens, the winner for the round can be calculated.
   """
-  categories: list[CategoryData]
-  questions: list[QuestionData]
+  categories: List[CategoryData]
+  questions: List[QuestionData]
   num_rounds: int
   question_index: int = -1 # Starts at -1 because game has not yet started
-  round_winners: list[RoundData] = []
+  game_complete = False
+  round_winners: List[RoundData] = []
   winning_time: Optional[int] # Lowest time so far. 
-  complete_players: list[str] = []
-  current_round_times: dict[str, int] = []
+  complete_players: Dict[str, Optional[int]] = dict()
+  current_round_times: Dict[str, int] = []
   # TODO: QUESTION: To save on processing, should I add a property for the current round data (e.g. The IDs of the round winners, the current correct answer, etc)?
+  final_scores: Optional[Dict[str, int]]
+  game_winners: Optional[List[str]] # Will Have a value once the game is complete
 
