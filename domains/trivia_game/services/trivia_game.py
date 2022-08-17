@@ -14,7 +14,10 @@ def getRandomQuestions(categories: list[CategoryData], num_rounds: int, question
   cat_ids = [c.id for c in categories]
   question_data = question_dao.getQuestionsFromCats(cat_ids=cat_ids)
   num_questions = len(question_data)
-  rand_ints = random.sample(range(0, min(num_rounds, num_questions)), num_questions)
+  rand_ints = random.sample(
+    range(0, num_questions),
+    min(num_rounds, num_questions)
+    )
   return [question_data[i] for i in rand_ints]
 
 def newGame(categories: list[CategoryData], question_dao: QuestionsDAO, num_rounds: int = 10) -> TriviaGame:
