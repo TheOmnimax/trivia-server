@@ -5,6 +5,7 @@ from daos.category_dao import CategoryDAO
 from daos.question_dao import QuestionsDAO
 import random
 from tools.randomization import genUniqueCode
+from threading import Timer
 
 class TriviaGameError(Exception):
   pass
@@ -46,6 +47,7 @@ def nextQuestion(game: TriviaGame) -> int: # Will probably never need the return
   game.winning_time = None
   game.complete_players = dict()
   game.current_round_times = []
+  print(f'There are now {len(game.players)} players, and {len(game.complete_players)} are complete')
   if game.question_index < len(game.questions): # Only add if there are remaining questions
     game.question_index += 1
   return game.question_index
@@ -99,7 +101,7 @@ def roundComplete(game: TriviaGame) -> bool:
       bool: True if the round is complete, and they're ready to move on, and False otherwise
   """
 
-  # print(f'There are {len(game.players)} players, and {len(game.complete_players)} are complete so far')
+  print(f'There are {len(game.players)} players, and {len(game.complete_players)} are complete so far')
   if len(game.players) == len(game.complete_players):
     return True
   elif len(game.players) > len(game.complete_players):
@@ -108,7 +110,7 @@ def roundComplete(game: TriviaGame) -> bool:
     return None
 
 
-def completeRound(game: TriviaGame):
+def completeRound(game: TriviaGame, completionFunction):
   if roundComplete(game) and (len(game.round_winners) < game.question_index + 1): # If the round is complete, and the round winners have not been calculated yet
     # Get best time
     
@@ -135,8 +137,9 @@ def completeRound(game: TriviaGame):
       print('Completing game')
       game.game_complete = True
       genWinners(game)
-    
-    # nextQuestion(game) # TODO: Add a delay
+    else:
+      print('Getting ready to start the next round...')
+      completionFunction()
 
 
 def getRoundResults(game: TriviaGame) -> RoundData:

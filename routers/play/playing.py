@@ -7,6 +7,7 @@ from gcloud_utils.datastore import GcloudMemoryStorage
 from domains.trivia_game import services as tg_services
 from domains.game.model import Game, GameRoom
 from domains.game import services as game_services
+from threading import Timer
 
 import dependencies
 
@@ -14,53 +15,6 @@ from pydantic import BaseModel
 from daos.utils import getClient
 
 router = APIRouter()
-
-# class NoData(BaseModel):
-#   pass
-
-# # Creates a new game, sends back the room code
-# @router.post('/create-room')
-# async def createRoom(data: NoData):
-#   room_code = genCode(6)
-#   game_room = GameRoom(room_code)
-#   room_storage.set(game_room)
-#   return {
-#     'room_code': room_code,
-#     }
-
-def _roundReturn(game: TriviaGame, player_id: str) -> PlayerCheckinResponse:
-  current_question = tg_services.getQuestion(game)
-  if tg_services.roundComplete(game):
-    tg_services.completeRound(game)
-    winners = tg_services.getRoundResults(game).winners
-    winner_data = [game.players[p] for p in winners]
-    winner_names = [p.name for p in winner_data]
-    is_winner = player_id in [p.id for p in winner_data]
-
-    if game.game_complete:
-      print('Game complete')
-      return GameCompleteResponse(
-        correct=tg_services.getCorrectValue(game),
-        winners=winner_names,
-        is_winner=is_winner,
-      )
-    else:
-      print('Next round')
-      return StillPlaying(
-        question=current_question.label,
-        choices=current_question.choices,
-        round_complete=True,
-        correct=tg_services.getCorrectValue(game),
-        winners=winner_names,
-        is_winner=is_winner,
-      )
-      # TODO: Add tg_services.nextQuestion(game)
-  else:
-    return StillPlaying(
-      question=current_question.label,
-      choices=current_question.choices,
-      round_complete=False
-    )
 
 @router.post('/start-game')
 async def startGame(data: AdminSchema, mem_store: GcloudMemoryStorage = Depends(dependencies.getMemoryStorage)):
@@ -115,13 +69,45 @@ async def playerCheckin(data: PlayerCheckinSchema, mem_store: GcloudMemoryStorag
     if game.question_index == -1:
       return {'started': False}
     else:
-      # current_question = tg_services.getQuestion(game)
-      # return PlayerCheckinResponse(
-      #   question=current_question.label,
-      #   choices=current_question.choices
-      # )
       tg_services.addRoundTime(game=game, player_id=data.player_id, time=data.time)
-      return _roundReturn(game, player_id=data.player_id)
+
+      current_question = tg_services.getQuestion(game)
+      if tg_services.roundComplete(game):
+        # If the round is complete, this creates a function for going to the next question, puts that into a transaction so it is properly saved to the server, puts that into a Timer so there is a delay, and then puts that into the completeRound() function, so it runs after calculating the winner of the round
+        def nq(game_room: GameRoom):
+          tg_services.nextQuestion(game_room.game)
+        tg_services.completeRound(
+          game,
+          Timer(1.0, mem_store.transaction, (data.room_code, nq)).start # Wait a couple of seconds before starting the next round
+          )
+        winners = tg_services.getRoundResults(game).winners
+        winner_data = [game.players[p] for p in winners]
+        winner_names = [p.name for p in winner_data]
+        is_winner = data.player_id in [p.id for p in winner_data]
+
+        if game.game_complete:
+          return GameCompleteResponse(
+            correct=tg_services.getCorrectValue(game),
+            winners=winner_names,
+            is_winner=is_winner,
+          )
+        else:
+          return StillPlaying(
+            question=current_question.label,
+            choices=current_question.choices,
+            round_complete=True,
+            correct=tg_services.getCorrectValue(game),
+            winners=winner_names,
+            is_winner=is_winner,
+          )
+          # TODO: Add tg_services.nextQuestion(game)
+      else:
+        return StillPlaying(
+          question=current_question.label,
+          choices=current_question.choices,
+          round_complete=False
+        )
+    # End pc
   return mem_store.transaction(data.room_code, pc)
 
 @router.post('/answer-question')
@@ -173,8 +159,6 @@ async def getResults(data: RoomSchema, mem_store: GcloudMemoryStorage = Depends(
     game = game_room.game
     scores = game.final_scores
     named_scores = dict()
-    print('Scores:')
-    print(scores)
     for player_id in scores:
       score = scores[player_id]
       player = game.players[player_id].name
