@@ -41,32 +41,13 @@ async def startGame(data: AdminSchema, mem_store: GcloudMemoryStorage = Depends(
       }
   return mem_store.transaction(data.room_code, sg)
 
-# @router.post('/get-question')
-# async def getQuestion(data: RoomSchema, mem_store: GcloudMemoryStorage = Depends(dependencies.getMemoryStorage)):
-  
-#   def gq(game_room: GameRoom):
-#     game = game_room.game
-#     current_question = tg_services.getQuestion(game)
-
-#   return {
-#     'question': 'Question from server',
-#     'choices': [
-#       'Choice 1',
-#       'Choice 2',
-#       'Choice 3',
-#       'Choice 4'
-#     ]
-#   }
-
-
-
 @router.post('/player-checkin')
 async def playerCheckin(data: PlayerCheckinSchema, mem_store: GcloudMemoryStorage = Depends(dependencies.getMemoryStorage)) -> PlayerCheckinResponse:
   
   
   def pc(game_room: GameRoom):
     game = game_room.game
-    if game.question_index == -1:
+    if game.question_index == -1: # Game has not yet started, so nothing to give yet
       return {'started': False}
     else:
       tg_services.addRoundTime(game=game, player_id=data.player_id, time=data.time)
@@ -91,7 +72,7 @@ async def playerCheckin(data: PlayerCheckinSchema, mem_store: GcloudMemoryStorag
             winners=winner_names,
             is_winner=is_winner,
           )
-        else:
+        else: # The round is complete, but not the game, so can display info about the round, including who won
           return StillPlaying(
             question=current_question.label,
             choices=current_question.choices,
@@ -101,7 +82,7 @@ async def playerCheckin(data: PlayerCheckinSchema, mem_store: GcloudMemoryStorag
             is_winner=is_winner,
           )
           # TODO: Add tg_services.nextQuestion(game)
-      else:
+      else: # If the round is NOT complete, simply continue to give info about the question, and indicate that the round is not yet complete
         return StillPlaying(
           question=current_question.label,
           choices=current_question.choices,

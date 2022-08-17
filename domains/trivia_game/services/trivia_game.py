@@ -43,11 +43,9 @@ def addPlayer(game: TriviaGame, player: Player):
 
 def nextQuestion(game: TriviaGame) -> int: # Will probably never need the return value, but it is here if it is needed
     # Clean up, go to next round
-  print('Next question')
   game.winning_time = None
   game.complete_players = dict()
   game.current_round_times = []
-  print(f'There are now {len(game.players)} players, and {len(game.complete_players)} are complete')
   if game.question_index < len(game.questions): # Only add if there are remaining questions
     game.question_index += 1
   return game.question_index
@@ -100,8 +98,6 @@ def roundComplete(game: TriviaGame) -> bool:
   Returns:
       bool: True if the round is complete, and they're ready to move on, and False otherwise
   """
-
-  print(f'There are {len(game.players)} players, and {len(game.complete_players)} are complete so far')
   if len(game.players) == len(game.complete_players):
     return True
   elif len(game.players) > len(game.complete_players):
@@ -132,13 +128,10 @@ def completeRound(game: TriviaGame, completionFunction):
       game.round_winners[game.question_index] = round_data
     else:
       game.round_winners.append(round_data)
-    print(f'Indexes: {game.question_index}, {len(game.questions)}, {game.question_index -1 >= len(game.questions)}')
     if game.question_index + 1 >= len(game.questions): # Game is complete
-      print('Completing game')
       game.game_complete = True
       genWinners(game)
     else:
-      print('Getting ready to start the next round...')
       completionFunction()
 
 
