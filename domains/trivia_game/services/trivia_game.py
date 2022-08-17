@@ -73,7 +73,7 @@ def makePlayerCorrect(game: TriviaGame, player_id: str, time: int):
     elif time < game.winning_time:
       game.winning_time = time
 
-def playerWrong(game: TriviaGame, player_id: str):
+def makePlayerWrong(game: TriviaGame, player_id: str):
   if player_id not in game.complete_players:
     game.complete_players[player_id] = None
 
@@ -113,15 +113,16 @@ def completeRound(game: TriviaGame, completionFunction):
     winners = list()
     current_round_times = game.current_round_times
     try:
-      best_time = min([n for n in game.complete_players.values() if type(n) == int])
+      complete_players = game.complete_players
+      best_time = min([n for n in complete_players.values() if type(n) == int])
       if best_time != game.winning_time: # This should never be true, so if it is, I need to check the code
         raise TriviaGameError(f'The set winning time is {game.winning_time}, but the best time saved by players is {best_time}.')
     except ValueError: # No winner this round
       best_time = 0
     else:
       # Assign winners
-      for player in current_round_times:
-        if current_round_times[player] == best_time:
+      for player in complete_players:
+        if complete_players[player] == best_time:
           winners.append(player)
     round_data = RoundData(winners=winners, time=best_time)
     if len(game.round_winners) > game.question_index: # This should never be true, since the round winners should not be added multiple times for the same round, but it is here if it is needed

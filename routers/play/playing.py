@@ -114,7 +114,7 @@ async def answerQuestion(data: AnswerQuestion, mem_store: GcloudMemoryStorage = 
         tg_services.makePlayerCorrect(game, player_id, data.time)
         return AnswerResponse(player_correct=True)
       else:
-        tg_services.playerWrong(game, player_id)
+        tg_services.makePlayerWrong(game, player_id)
         return AnswerResponse(player_correct=False)
   return mem_store.transaction(id=data.room_code, new_val_func=aq)
 
