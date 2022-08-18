@@ -66,7 +66,7 @@ async def playerCheckin(data: PlayerCheckinSchema, mem_store: GcloudMemoryStorag
         winner_names = [p.name for p in winner_data]
         is_winner = data.player_id in [p.id for p in winner_data]
 
-        if game.game_complete:
+        if game.game_complete: # TODO: Add delay before completing game
           return GameCompleteResponse(
             correct=tg_services.getCorrectValue(game),
             winners=winner_names,
@@ -93,11 +93,6 @@ async def playerCheckin(data: PlayerCheckinSchema, mem_store: GcloudMemoryStorag
 
 @router.post('/answer-question')
 async def answerQuestion(data: AnswerQuestion, mem_store: GcloudMemoryStorage = Depends(dependencies.getMemoryStorage)):
-
-  # Handler steps:
-  # 1. Input verification: Make sure the body has all of the correct data
-  # 2. Data transformations and retrieval outside of transaction
-  # 3. Transaction
 
   error = None
 

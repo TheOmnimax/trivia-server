@@ -114,7 +114,6 @@ def completeRound(game: TriviaGame, completionFunction):
     # Get best time
     
     winners = list()
-    current_round_times = game.current_round_times
     try:
       complete_players = game.complete_players
       best_time = min([n for n in complete_players.values() if type(n) == int])

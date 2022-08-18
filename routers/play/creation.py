@@ -36,7 +36,8 @@ async def newGame(data: CreateGame, ar: dependencies.AllRetrieval = Depends(depe
     # game_code = mem_store.create()
     new_game = tg_services.newGame(
       categories=categories,
-      question_dao=question_dao
+      question_dao=question_dao,
+      num_rounds=5 # TODO: Update this to be customizable
       ) # TODO: QUESTION: Should I feed in the entire CreateGame schema, or break it up, then feed that in? I feel like the latter, in case the function will be used for other things
     
     game_services.addGame(game_room=game_room, game=new_game)
