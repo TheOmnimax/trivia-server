@@ -1,7 +1,9 @@
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
+from domains import game
 from domains.trivia_game.services.trivia_game import getQuestion, roundComplete
-from domains.trivia_game.model import TriviaGame
-from domains.trivia_game.schemas import AdminSchema, AnswerQuestion, AnswerResponse, GameCompleteResponse, PlayerCheckinResponse, PlayerCheckinSchema, PlayerSchema, ResultsResponse, RoomSchema, StillPlaying
+from domains.trivia_game.model import TriviaGame, TriviaPlayer
+from domains.trivia_game.schemas import AdminResponse, AdminSchema, AnswerQuestion, AnswerResponse, GameCompleteResponse, PlayerCheckinResponse, PlayerCheckinSchema, PlayerSchema, ResultsResponse, RoomSchema, StillPlaying
 from tools.randomization import genCode
 from gcloud_utils.datastore import GcloudMemoryStorage
 from domains.trivia_game import services as tg_services
@@ -16,109 +18,139 @@ from daos.utils import getClient
 
 router = APIRouter()
 
+def _getGameId(room_code: str, mem_store: GcloudMemoryStorage) -> str:
+  game_room = mem_store.get(kind='game_room', id=room_code)
+  game_id = game_room.game_id
+  return game_id
+
+def _getGame(room_code: str, mem_store: GcloudMemoryStorage) -> tuple[str, TriviaGame]:
+  game_id = _getGameId(room_code=room_code, mem_store=mem_store)
+  game = mem_store.get(kind='trivia_game', id=game_id)
+  return (game_id, game)
+
+
+
+
 @router.post('/start-game')
 async def startGame(data: AdminSchema, mem_store: GcloudMemoryStorage = Depends(dependencies.getMemoryStorage)):
 
-  def sg(game_room: GameRoom):
-    game = game_room.game
-    host_id = game_room.host_id
-    if host_id == data.host_id:
-      if game.question_index > -1:
-        return {
-          'successful': False,
-          'message': 'Only the host can start the game.'
-        }
-      else:
-        tg_services.nextQuestion(game)
-        return {
-          'successful': True,
-          'message': 'Game started.'
-        }
+  game_room = mem_store.get(kind='game_room', id=data.room_code)
+
+  if game_room.host_id != data.host_id:
+    return AdminResponse(
+      successful=False,
+      message='Only the host can start the game.'
+    )
+  game_id = game_room.game_id
+
+  def sg(game: TriviaGame):
+    game_started = tg_services.startGame(game)
+    if game_started:
+      return AdminResponse(
+        successful=True,
+        message='Game started!'
+      )
     else:
-      return {
-        'successful': False,
-        'message': 'Only the host can start the game.'
-      }
-  return mem_store.transaction(data.room_code, sg)
+      return AdminResponse(
+        successful=False,
+        message='The game has already started.'
+      )
+      
+  return mem_store.transaction(kind='trivia_game', id=game_id, new_val_func=sg)
 
 @router.post('/player-checkin')
 async def playerCheckin(data: PlayerCheckinSchema, mem_store: GcloudMemoryStorage = Depends(dependencies.getMemoryStorage)) -> PlayerCheckinResponse:
-  
-  
-  def pc(game_room: GameRoom):
-    game = game_room.game
-    if game.question_index == -1: # Game has not yet started, so nothing to give yet
-      return {'started': False}
-    else:
-      tg_services.addRoundTime(game=game, player_id=data.player_id, time=data.time)
 
-      current_question = tg_services.getQuestion(game)
-      if tg_services.roundComplete(game):
-        # If the round is complete, this creates a function for going to the next question, puts that into a transaction so it is properly saved to the server, puts that into a Timer so there is a delay, and then puts that into the completeRound() function, so it runs after calculating the winner of the round
-        def nq(game_room: GameRoom):
-          tg_services.nextQuestion(game_room.game)
-        tg_services.completeRound(
-          game,
-          Timer(1.0, mem_store.transaction, (data.room_code, nq)).start # Wait a couple of seconds before starting the next round
-          )
-        winners = tg_services.getRoundResults(game).winners
-        winner_data = [game.players[p] for p in winners]
-        winner_names = [p.name for p in winner_data]
-        is_winner = data.player_id in [p.id for p in winner_data]
+  game_id, game = _getGame(room_code=data.room_code, mem_store=mem_store)
+  
+  if game.question_index == -1:
+    return {'started': False}
+  
+  def pc(player: TriviaPlayer):
+    if player.selected_choice == -1:
+      player.time_used = data.time
+  player = mem_store.get(kind='player', id=data.player_id, data_type=TriviaPlayer)
+  players = mem_store.getMulti(
+    kind='player',
+    ids=game.players,
+    data_type=TriviaPlayer
+    )
+  if not (player.completed_round or tg_services.roundComplete(player_data=players, winning_time=game.winning_time)): # Only add time if player is not done
+    mem_store.transaction(id=data.player_id, kind='player', new_val_func=pc)
 
-        if game.game_complete: # TODO: Add delay before completing game
-          return GameCompleteResponse(
-            correct=tg_services.getCorrectValue(game),
-            winners=winner_names,
-            is_winner=is_winner,
-          )
-        else: # The round is complete, but not the game, so can display info about the round, including who won
-          return StillPlaying(
-            question=current_question.label,
-            choices=current_question.choices,
-            round_complete=True,
-            correct=tg_services.getCorrectValue(game),
-            winners=winner_names,
-            is_winner=is_winner,
-          )
-          # TODO: Add tg_services.nextQuestion(game)
-      else: # If the round is NOT complete, simply continue to give info about the question, and indicate that the round is not yet complete
-        return StillPlaying(
-          question=current_question.label,
-          choices=current_question.choices,
-          round_complete=False
+
+  current_question = tg_services.getQuestion(game)
+  if tg_services.roundComplete(player_data=players, winning_time=game.winning_time):
+    def nextRound():
+      tg_services.nextRound(game_id=game_id, transaction=mem_store.transaction)
+    
+    tg_services.completeRound(
+        game,
+        player_data=players,
+        completionFunction=Timer(1.0, nextRound).start # Wait a couple of seconds before starting the next round
         )
-    # End pc
-  return mem_store.transaction(data.room_code, pc)
+    winners_ids = tg_services.getRoundResults(game).winners
+    winner_names = [players[p].name for p in winners_ids]
+    is_winner = data.player_id in winners_ids
+
+    if game.game_complete: # TODO: Add delay before completing game
+      return GameCompleteResponse(
+        correct=tg_services.getCorrectValue(game),
+        winners=winner_names,
+        is_winner=is_winner,
+      )
+    else: # The round is complete, but not the game, so can display info about the round, including who won
+      return StillPlaying(
+        question=current_question.label,
+        choices=current_question.choices,
+        player_complete=True,
+        round_complete=True,
+        correct=tg_services.getCorrectValue(game),
+        winners=winner_names,
+        is_winner=is_winner,
+      )
+  elif players[data.player_id].selected_choice > -1:
+    return StillPlaying(
+      question=current_question.label,
+      choices=current_question.choices,
+      player_complete=True,
+      round_complete=False
+    )
+  else:
+    return StillPlaying(
+      question=current_question.label,
+      choices=current_question.choices,
+      player_complete=False,
+      round_complete=False
+    )
 
 @router.post('/answer-question')
 async def answerQuestion(data: AnswerQuestion, mem_store: GcloudMemoryStorage = Depends(dependencies.getMemoryStorage)):
 
-  error = None
-
-  def aq(game_room: GameRoom):
-    game = game_room.game
-    player_id = data.player_id
-    if data.player_id in game.complete_players: # TODO: QUESTION: Is there a good way to make "game" of type "TriviaGame" so the hints work better?
-      error = 1
+  game_id, game = _getGame(room_code=data.room_code, mem_store=mem_store)
+  current_question = tg_services.getQuestion(game)
+  correct_answer = current_question.correct
+  def aq(player: TriviaPlayer):
+    if player.selected_choice > -1:
       raise HTTPException(status_code=428, detail='Player already answered question.')
+    player.completed_round = True
+    player.selected_choice = data.answer
+    player.time_used = data.time
+    if data.answer == correct_answer:
+      return AnswerResponse(player_correct=True)
     else:
-      current_question = tg_services.getQuestion(game)
-      correct_answer = current_question.correct
-      if data.answer == correct_answer:
-        tg_services.makePlayerCorrect(game, player_id, data.time)
-        return AnswerResponse(player_correct=True)
-      else:
-        tg_services.makePlayerWrong(game, player_id)
-        return AnswerResponse(player_correct=False)
-  return mem_store.transaction(id=data.room_code, new_val_func=aq)
+      return AnswerResponse(player_correct=False)
+
+  return mem_store.transaction(kind='player', id=data.player_id, new_val_func=aq)
 
 @router.post('/get-results')
 async def getResults(data: RoomSchema, mem_store: GcloudMemoryStorage = Depends(dependencies.getMemoryStorage)):
-  def gr(game_room: GameRoom):
-    game = game_room.game
+
+  game_id = _getGameId(room_code=data.room_code, mem_store=mem_store)
+  def gr(game: TriviaGame):
     scores = game.final_scores
     named_scores = dict()
+    player_data = mem_store.getMulti(kind='player', ids=[scores.keys()])
     for player_id in scores:
       score = scores[player_id]
       player = game.players[player_id].name
@@ -127,4 +159,4 @@ async def getResults(data: RoomSchema, mem_store: GcloudMemoryStorage = Depends(
       scores=named_scores,
       winners=tg_services.getWinnerNames(game)
     )
-  return mem_store.transaction(data.room_code, gr)
+  return mem_store.transaction(kind='trivia_game', id=game_id, new_val_func=gr)

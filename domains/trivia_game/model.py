@@ -5,7 +5,7 @@ from domains.trivia.model import QuestionData, CategoryData
 
 class RoundData(BaseModel):
   winners: list[str]
-  time: int
+  time: Optional[int]
 
 
 # NEW?
@@ -16,6 +16,11 @@ class RoundData(BaseModel):
 #   question: QuestionData
 #   correct: int
 #   round_times: dict[str, int]
+
+class TriviaPlayer(Player):
+  completed_round: bool = False
+  time_used: int = 0
+  selected_choice: int = -1
 
 
 class TriviaGame(Game):
@@ -32,8 +37,6 @@ class TriviaGame(Game):
   game_complete = False
   round_winners: List[RoundData] = []
   winning_time: Optional[int] # Lowest time so far. 
-  complete_players: Dict[str, Optional[int]] = dict()
-  current_round_times: Dict[str, int] = []
   # TODO: QUESTION: To save on processing, should I add a property for the current round data (e.g. The IDs of the round winners, the current correct answer, etc)?
   final_scores: Optional[Dict[str, int]]
   game_winners: Optional[List[str]] # Will Have a value once the game is complete

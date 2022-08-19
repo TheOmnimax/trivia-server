@@ -1,16 +1,18 @@
 from domains.game.model import Game, Player, GameRoom
 from domains.game.services import player as player_services
 from tools.randomization import genUniqueCode
-def createGameRoom(host_player: Player):
+def createGameRoom(host_id: str):
   return GameRoom(
-    host_id=host_player.id,
-    members={host_player.id: host_player}
+    host_id=host_id,
+    members=[host_id]
   )
 
 
-def addGame(game_room: GameRoom, game: Game):
-  game.players = game_room.members
-  game_room.game = game
+def addGame(game_room: GameRoom, game_id: str):
+  game_room.game_id = game_id
+
+def addPlayersToGame(game: Game, player_ids: list[str]):
+  game.players = player_ids
 
 def createMember(game_room: GameRoom, name: str) -> str:
   existing_codes = [id for id in game_room.members]
@@ -22,7 +24,7 @@ def createMember(game_room: GameRoom, name: str) -> str:
 
 def addMemberToGame(game_room: GameRoom, player_id: str) -> bool:
   if player_id in game_room.members:
-    game_room.game.players[player_id] = game_room.members[player_id]
+    game_room.game_id.players[player_id] = game_room.members[player_id]
     return True
   else:
     return False

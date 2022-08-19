@@ -28,8 +28,8 @@ router = APIRouter()
 origins = [
     'http://localhost',
     'http://localhost:8080',
-    'http://localhost:55359',
-    'https://localhost:55359',
+    'http://localhost:58259',
+    'https://localhost:58259',
     'https://max-trivia.web.app',
     'http://max-trivia.web.app',
     'https://trivia-question-manager.web.app',

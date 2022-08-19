@@ -42,6 +42,10 @@ class JoinGameSchema(BaseModel):
 class JoinGameResponse(BaseModel):
   player_id: str
 
+class AdminResponse(BaseModel):
+  successful: bool
+  message: str
+
 class GetQuestionSchema(RoomSchema):
   room_code: str
 
@@ -58,11 +62,13 @@ class PlayerCheckinResponse(BaseModel):
   correct: Optional[int]
   winners: Optional[list[str]]
   is_winner: Optional[bool]
+  player_complete: bool = False
   game_complete: bool = False
 
 class StillPlaying(PlayerCheckinResponse):
   question: str
   choices: list[str]
+  player_complete: bool
   round_complete: bool
   pass
 
