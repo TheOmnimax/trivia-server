@@ -21,7 +21,7 @@ async def createRoom(data: CreateRoomSchema, mem_store: GcloudMemoryStorage = De
   host_id = mem_store.create(kind='player', data=host_player)
   game_room = game_services.createGameRoom(host_id=host_id)
   room_code = mem_store.create(kind='game_room', data=game_room)
-  return CreateRoomResponse(
+  return  CreateRoomResponse(
     room_code=room_code,
     host_id=host_id
   )

@@ -34,7 +34,8 @@ class TriviaGame(Game):
   questions: List[QuestionData]
   num_rounds: int
   question_index: int = -1 # Starts at -1 because game has not yet started
-  game_complete = False
+  game_complete: bool = False
+  round_complete: bool = False
   round_winners: List[RoundData] = []
   winning_time: Optional[int] # Lowest time so far. 
   # TODO: QUESTION: To save on processing, should I add a property for the current round data (e.g. The IDs of the round winners, the current correct answer, etc)?

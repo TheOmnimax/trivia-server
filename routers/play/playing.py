@@ -42,10 +42,10 @@ async def startGame(data: AdminSchema, mem_store: GcloudMemoryStorage = Depends(
       message='Only the host can start the game.'
     )
   game_id = game_room.game_id
-
+  
   def sg(game: TriviaGame):
     game_started = tg_services.startGame(game)
-    if game_started:
+    if game_started: # TODO: Add this as a predicate instead
       return AdminResponse(
         successful=True,
         message='Game started!'
@@ -80,15 +80,26 @@ async def playerCheckin(data: PlayerCheckinSchema, mem_store: GcloudMemoryStorag
 
 
   current_question = tg_services.getQuestion(game)
-  if tg_services.roundComplete(player_data=players, winning_time=game.winning_time):
-    def nextRound():
-      tg_services.nextRound(game_id=game_id, transaction=mem_store.transaction)
-    
+  def nr():
+    tg_services.nextRound(game_id=game_id, player_ids=players.keys(), transaction=mem_store.transaction)
+  
+  def completeRound(game: TriviaGame):
+    game.round_complete = True
     tg_services.completeRound(
         game,
         player_data=players,
-        completionFunction=Timer(1.0, nextRound).start # Wait a couple of seconds before starting the next round
+        completionFunction=Timer(1.0, nr).start # Wait a couple of seconds before starting the next round
         )
+  
+  def predicate(game: TriviaGame): # True if ready to begin calculations for the next round. Using "round_complete" to make sure they do not happen multiple times
+    # print('Predicate')
+    # print('Round complete:', game.round_complete)
+    # print('From function:', tg_services.roundComplete(player_data=players, winning_time=game.winning_time))
+    return (not game.round_complete) and tg_services.roundComplete(player_data=players, winning_time=game.winning_time)
+
+  mem_store.transaction(kind='trivia_game', id=game_id, new_val_func=completeRound, predicate=predicate)
+  
+  if game.round_complete:
     winners_ids = tg_services.getRoundResults(game).winners
     winner_names = [players[p].name for p in winners_ids]
     is_winner = data.player_id in winners_ids
@@ -105,6 +116,7 @@ async def playerCheckin(data: PlayerCheckinSchema, mem_store: GcloudMemoryStorag
         choices=current_question.choices,
         player_complete=True,
         round_complete=True,
+        game_complete=False,
         correct=tg_services.getCorrectValue(game),
         winners=winner_names,
         is_winner=is_winner,
@@ -114,14 +126,16 @@ async def playerCheckin(data: PlayerCheckinSchema, mem_store: GcloudMemoryStorag
       question=current_question.label,
       choices=current_question.choices,
       player_complete=True,
-      round_complete=False
+      round_complete=False,
+      game_complete=False
     )
   else:
     return StillPlaying(
       question=current_question.label,
       choices=current_question.choices,
       player_complete=False,
-      round_complete=False
+      round_complete=False,
+      game_complete=False
     )
 
 @router.post('/answer-question')

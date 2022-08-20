@@ -65,6 +65,8 @@ def getRound(game: TriviaGame) -> int:
 def getQuestion(game: TriviaGame) -> QuestionData:
   if game.question_index < len(game.questions): # Only return if there are remaining questions
     return game.questions[game.question_index]
+  else:
+    return game.questions[len(game.questions) - 1]
 
 def getCorrectValue(game: TriviaGame) -> int:
   question = getQuestion(game)
@@ -117,8 +119,11 @@ def playerCheckin(game: TriviaGame, player_id: str, time: int):
 
 def roundComplete(player_data: dict[str, TriviaPlayer], winning_time: Optional[int]) -> bool:
   complete_results = []
+  # print('Winning time:', winning_time)
   for player_id in player_data:
     player = player_data[player_id]
+    # print('Time used:', player.time_used)
+    # print('Selected choice:', player.selected_choice)
     if (winning_time != None) and (player.time_used > winning_time): # Time exceeded current time
       complete_results.append(True)
     elif player.selected_choice == -1: # Not yet selected a choice
@@ -155,11 +160,12 @@ def completeRound(game: TriviaGame, player_data: dict[str, TriviaPlayer], comple
       game.game_complete = True
       genWinners(game)
     else:
+      # print('Running completion function...')
       completionFunction()
 
 
 def getRoundResults(game: TriviaGame) -> RoundData:
-  return game.round_winners[game.question_index - 1] # TODO: Make so the -1 is unnneccessary
+  return game.round_winners[len(game.round_winners) - 1] # TODO: Make so the -1 is unnneccessary
 
 def genWinners(game: TriviaGame):
   scores = dict()
@@ -197,18 +203,20 @@ def startGame(game: TriviaGame):
   else:
     return False
 
-def nextRound(game_id: str, transaction):
+def nextRound(game_id: str, player_ids: list[str], transaction):
   def resetGameTime(game: TriviaGame) -> list[str]:
     game.winning_time = None
     if game.question_index < len(game.questions): # Only add if there are remaining questions
+      print('Going to next round...')
+      game.round_complete = False
       game.question_index += 1
-    return game.players
+    # return game.players
   
   def resetPlayer(player: TriviaPlayer):
     player.time_used = 0
     player.selected_choice = -1
     player.completed_round = False
   
-  player_ids = transaction(kind='trivia_game', id=game_id, new_val_func=resetGameTime)
   for p in player_ids:
     transaction(kind='player', id=p, new_val_func=resetPlayer)
+  transaction(kind='trivia_game', id=game_id, new_val_func=resetGameTime)

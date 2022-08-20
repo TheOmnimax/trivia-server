@@ -24,7 +24,7 @@ class GcloudMemoryStorage:
     self._lock = threading.Lock()
     self._json_converter = JsonConverter(pre_accepted=pre_accepted, skipped_keys=skipped_keys)
   
-  def transaction(self, kind: str, id: str, new_val_func):
+  def transaction(self, kind: str, id: str, new_val_func, predicate = None):
     if (id == '' or id == None):
       return None
     key = self._client.key(kind, id)
@@ -34,13 +34,18 @@ class GcloudMemoryStorage:
         return None
       else:
         server_data = self._json_converter.jsonToBaseModel(entity)
+
+        if (predicate != None) and (not predicate(server_data)):
+          return None
+
         data = new_val_func(server_data)
         entity = datastore.Entity(key)
         new_data = self._json_converter.baseModelToJson(server_data)
         entity.update(new_data)
         self._client.put(entity)
         return data
-  
+    
+
   def exists(self, kind: str, id: str) -> bool:
     key = self._client.key(kind, id)
     if self._client.get(key) == None:
@@ -86,7 +91,7 @@ class GcloudMemoryStorage:
       else:
         return data_type.parse_obj(data) 
   
-  def getMulti(self, kind: str, ids: list[str], data_type) -> dict:
+  def getMulti(self, kind: str, ids: list[str], data_type = None) -> dict:
     keys = [self._client.key(kind, id) for id in ids]
     entities = self._client.get_multi(keys)
     if data_type == None:
