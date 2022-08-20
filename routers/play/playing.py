@@ -160,17 +160,10 @@ async def answerQuestion(data: AnswerQuestion, mem_store: GcloudMemoryStorage = 
 @router.post('/get-results')
 async def getResults(data: RoomSchema, mem_store: GcloudMemoryStorage = Depends(dependencies.getMemoryStorage)):
 
-  game_id = _getGameId(room_code=data.room_code, mem_store=mem_store)
-  def gr(game: TriviaGame):
-    scores = game.final_scores
-    named_scores = dict()
-    player_data = mem_store.getMulti(kind='player', ids=[scores.keys()])
-    for player_id in scores:
-      score = scores[player_id]
-      player = game.players[player_id].name
-      named_scores[player] = score
-    return ResultsResponse(
+  game_id, game = _getGame(room_code=data.room_code, mem_store=mem_store)
+  player_data = mem_store.getMulti(kind='player', ids=game.players, data_type=TriviaPlayer)
+  named_scores, winner_names = tg_services.getResultsWithNames(game=game, player_data=player_data)
+  return ResultsResponse(
       scores=named_scores,
-      winners=tg_services.getWinnerNames(game)
-    )
-  return mem_store.transaction(kind='trivia_game', id=game_id, new_val_func=gr)
+      winners=winner_names
+  )

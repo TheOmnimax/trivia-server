@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Dict, List, Optional
 from domains.trivia_game.model import TriviaGame, RoundData, TriviaPlayer
 from domains.game.model import Player
 from domains.trivia.model import QuestionData, CategoryData
@@ -187,14 +187,23 @@ def genWinners(game: TriviaGame):
         winners.append(player_id)
     game.game_winners = winners
 
-def getWinnerNames(game: TriviaGame) -> list[str]:
+def getWinnerNames(game: TriviaGame, player_data: Dict[str, TriviaPlayer]) -> list[str]:
   if game.game_winners == None:
     return None
   else:
     winner_names = []
     for player_id in game.game_winners:
-      winner_names.append(game.players[player_id].name)
+      winner_names.append(player_data[player_id].name)
     return winner_names
+
+def getResultsWithNames(game: TriviaGame, player_data: Dict[str, TriviaPlayer]) -> tuple[Dict[str, str], List[str]]:
+  scores = game.final_scores
+  named_scores = {player_data[player_id].name:scores[player_id] for player_id in scores}
+  if game.game_winners == None:
+    winner_names = []
+  else:
+    winner_names = [player_data[player_id].name for player_id in game.game_winners]
+  return (named_scores, winner_names)
 
 def startGame(game: TriviaGame):
   if game.question_index == -1:
