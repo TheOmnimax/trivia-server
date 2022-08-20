@@ -1,20 +1,14 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
-from domains import game
 from domains.trivia_game.services.trivia_game import getQuestion, roundComplete
 from domains.trivia_game.model import TriviaGame, TriviaPlayer
-from domains.trivia_game.schemas import AdminResponse, AdminSchema, AnswerQuestion, AnswerResponse, GameCompleteResponse, PlayerCheckinResponse, PlayerCheckinSchema, PlayerSchema, ResultsResponse, RoomSchema, StillPlaying
+from domains.trivia_game.schemas import AdminResponse, AdminSchema, AnswerQuestion, AnswerResponse, GameCompleteResponse, PlayerCheckinResponse, PlayerCheckinSchema, ResultsResponse, RoomSchema, StillPlaying
 from tools.randomization import genCode
 from gcloud_utils.datastore import GcloudMemoryStorage
 from domains.trivia_game import services as tg_services
-from domains.game.model import Game, GameRoom
-from domains.game import services as game_services
 from threading import Timer
 
 import dependencies
-
-from pydantic import BaseModel
-from daos.utils import getClient
 
 router = APIRouter()
 
@@ -25,11 +19,8 @@ def _getGameId(room_code: str, mem_store: GcloudMemoryStorage) -> str:
 
 def _getGame(room_code: str, mem_store: GcloudMemoryStorage) -> tuple[str, TriviaGame]:
   game_id = _getGameId(room_code=room_code, mem_store=mem_store)
-  game = mem_store.get(kind='trivia_game', id=game_id)
+  game = mem_store.get(kind='trivia_game', id=game_id, data_type=TriviaGame)
   return (game_id, game)
-
-
-
 
 @router.post('/start-game')
 async def startGame(data: AdminSchema, mem_store: GcloudMemoryStorage = Depends(dependencies.getMemoryStorage)):
@@ -63,6 +54,7 @@ async def playerCheckin(data: PlayerCheckinSchema, mem_store: GcloudMemoryStorag
 
   game_id, game = _getGame(room_code=data.room_code, mem_store=mem_store)
   
+
   if game.question_index == -1:
     return {'started': False}
   
@@ -144,18 +136,28 @@ async def answerQuestion(data: AnswerQuestion, mem_store: GcloudMemoryStorage = 
   game_id, game = _getGame(room_code=data.room_code, mem_store=mem_store)
   current_question = tg_services.getQuestion(game)
   correct_answer = current_question.correct
-  def aq(player: TriviaPlayer):
-    if player.selected_choice > -1:
-      raise HTTPException(status_code=428, detail='Player already answered question.')
-    player.completed_round = True
-    player.selected_choice = data.answer
-    player.time_used = data.time
-    if data.answer == correct_answer:
-      return AnswerResponse(player_correct=True)
-    else:
-      return AnswerResponse(player_correct=False)
 
-  return mem_store.transaction(kind='player', id=data.player_id, new_val_func=aq)
+  def pCorrect(game: TriviaGame, player: TriviaPlayer):
+    tg_services.makePlayerCorrect(game=game, player=player, selected_choice=data.answer, time=data.time)
+    return AnswerResponse(player_correct=True)
+    pass
+
+  def pWrong(player: TriviaPlayer):
+    tg_services.makePlayerWrong(player=player, selected_choice=data.answer)
+    return AnswerResponse(player_correct=False)
+
+
+  if data.answer == correct_answer:
+    return mem_store.transactionMulti(
+      pairs=[
+        ('trivia_game', game_id),
+        ('player', data.player_id)
+        ],
+      new_val_func=pCorrect
+    )
+  else:
+    return mem_store.transaction(kind='player', id=data.player_id, new_val_func=pWrong)
+
 
 @router.post('/get-results')
 async def getResults(data: RoomSchema, mem_store: GcloudMemoryStorage = Depends(dependencies.getMemoryStorage)):

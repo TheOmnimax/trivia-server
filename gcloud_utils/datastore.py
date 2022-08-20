@@ -44,7 +44,44 @@ class GcloudMemoryStorage:
         entity.update(new_data)
         self._client.put(entity)
         return data
-    
+
+  def transactionMulti(self,
+    pairs: tuple[str, str],
+    new_val_func
+    ):
+    keys = [self._client.key(*p) for p in pairs]
+    entities_unordered = list(self._client.get_multi(keys))
+    # print('Unordered:')
+    # print(entities_unordered)
+
+    # Put into correct order
+    entities = []
+    for key in keys:
+      name = key.name
+      kind = key.kind
+      added = False
+      for entity in entities_unordered:
+        if (entity.key.name == name) and (entity.kind == kind):
+          entities.append(entity)
+          added = True
+          break
+      if not added:
+        entities.append(None)
+    # print('Entities:')
+    # print(entities)
+
+    data_list = [self._json_converter.jsonToBaseModel(e) for e in entities]
+    with self._client.transaction():
+      return_data = new_val_func(*data_list)
+      for e in range (len(entities)):
+        entity = entities[e]
+        update_data = self._json_converter.baseModelToJson(data_list[e])
+        entity.update(update_data)
+      self._client.put_multi(entities)
+    return return_data
+
+
+    pass
 
   def exists(self, kind: str, id: str) -> bool:
     key = self._client.key(kind, id)

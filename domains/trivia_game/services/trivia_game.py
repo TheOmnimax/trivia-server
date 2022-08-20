@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from typing import Dict, List, Optional
 from domains.trivia_game.model import TriviaGame, RoundData, TriviaPlayer
 from domains.game.model import Player
@@ -75,18 +76,22 @@ def getCorrectValue(game: TriviaGame) -> int:
 def addRoundTime(game: TriviaGame, player_id: str, time: int): # How much time has passed for the player so far
   game.current_round_times[player_id] = time
 
-def makePlayerCorrect(game: TriviaGame, player_id: str, time: int):
-  if player_id not in game.complete_players:
-    game.complete_players[player_id] = time
-    game.current_round_times[player_id] = time
-    if game.winning_time == None:
-      game.winning_time = time
-    elif time < game.winning_time:
+def _playerAnswered(player: TriviaPlayer, selected_choice: int):
+  if player.selected_choice > -1:
+    raise HTTPException(status_code=428, detail='Player already answered question.')
+  player.completed_round = True
+  player.selected_choice = selected_choice
+
+def makePlayerCorrect(game: TriviaGame, player: TriviaPlayer, selected_choice: int, time: int):
+  _playerAnswered(player=player, selected_choice=selected_choice)
+  player.time_used = time
+  if game.winning_time == None:
+    game.winning_time = time
+  elif time < game.winning_time:
       game.winning_time = time
 
-def makePlayerWrong(game: TriviaGame, player_id: str):
-  if player_id not in game.complete_players:
-    game.complete_players[player_id] = None
+def makePlayerWrong(player: TriviaPlayer, selected_choice: int):
+  _playerAnswered(player=player, selected_choice=selected_choice)
 
 def playerCheckin(game: TriviaGame, player_id: str, time: int):
   """Takes the player and their current time so far, and determines if their time has run out so far, based on the winning time so far.
@@ -216,7 +221,6 @@ def nextRound(game_id: str, player_ids: list[str], transaction):
   def resetGameTime(game: TriviaGame) -> list[str]:
     game.winning_time = None
     if game.question_index < len(game.questions): # Only add if there are remaining questions
-      print('Going to next round...')
       game.round_complete = False
       game.question_index += 1
     # return game.players
