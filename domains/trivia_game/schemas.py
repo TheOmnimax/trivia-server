@@ -60,21 +60,14 @@ class AnswerResponse(BaseModel):
   player_correct: bool
   
 class PlayerCheckinResponse(BaseModel):
-  correct: Optional[int]
-  winners: Optional[list[str]]
-  is_winner: Optional[bool]
-  player_complete: bool = False
-  game_complete: bool = False
-
-class StillPlaying(PlayerCheckinResponse):
   question: str
   choices: list[str]
-  player_complete: bool
-  round_complete: bool
-  pass
-
-class GameCompleteResponse(PlayerCheckinResponse):
-  game_complete: bool = True
+  correct: Optional[int]
+  player_complete: bool = False
+  round_complete: bool = False
+  game_complete: bool = False
+  winners: Optional[list[str]]
+  is_winner: Optional[bool]
 
 class ResultsResponse(BaseModel):
   scores: dict[str, int]
