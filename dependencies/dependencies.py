@@ -12,7 +12,6 @@ from gcloud_utils.datastore import GcloudMemoryStorage
 datastore_client = datastore.Client()
 memory_storage = GcloudMemoryStorage(
   client=datastore_client,
-  kind='game_room',
   pre_accepted=[Player, GameRoom, Game, TriviaGame, RoundData,]
   )
 question_dao = QuestionsDAO(client=datastore_client)
