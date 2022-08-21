@@ -36,9 +36,6 @@ def completionCheck(room_code: str, player_id: str, mem_store: GcloudMemoryStora
         )
   
   def predicate(game: TriviaGame): # True if ready to begin calculations for the next round. Using "round_complete" to make sure they do not happen multiple times
-    # print('Predicate')
-    # print('Round complete:', game.round_complete)
-    # print('From function:', tg_services.roundComplete(player_data=players, winning_time=game.winning_time))
     return (not game.round_complete) and tg_services.roundComplete(player_data=players, winning_time=game.winning_time)
   players = mem_store.getMulti(
     kind='player',
@@ -48,17 +45,10 @@ def completionCheck(room_code: str, player_id: str, mem_store: GcloudMemoryStora
   mem_store.transaction(kind='trivia_game', id=game_id, new_val_func=completeRound, predicate=predicate)
 
   current_question = tg_services.getQuestion(game)
-  print('Compl statuses:')
-  print([players[p].completed_round for p in players])
-  print('Ready statuses:')
-  print([players[p].ready for p in players])
   if game.round_complete:
     winners_ids = tg_services.getRoundResults(game).winners
     winner_names = [players[p].name for p in winners_ids]
     is_winner = player_id in winners_ids
-
-    print('Ready statuses:')
-    print([players[p].ready for p in players])
 
     if all([players[p].ready for p in players]):
       tg_services.nextRound(game_id=game_id, player_ids=players.keys(), transaction=mem_store.transaction)
@@ -137,7 +127,6 @@ async def playerCheckin(data: PlayerCheckinSchema, mem_store: GcloudMemoryStorag
   
   def pc(player: TriviaPlayer):
     if (player.selected_choice == -1) and (data.time > player.time_used):
-      print(f'Setting time for {data.player_id} to {data.time}')
       player.time_used = data.time
     if (game.winning_time != None) and (player.time_used > game.winning_time):
       player.completed_round = True

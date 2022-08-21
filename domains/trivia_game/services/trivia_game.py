@@ -162,7 +162,6 @@ def completeRound(game: TriviaGame, player_data: dict[str, TriviaPlayer], comple
       game.game_complete = True
       genWinners(game)
     else:
-      # print('Running completion function...')
       if completionFunction != None:
         completionFunction()
 
