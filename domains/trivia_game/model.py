@@ -21,6 +21,7 @@ class TriviaPlayer(Player):
   completed_round: bool = False
   time_used: int = 0
   selected_choice: int = -1
+  ready: bool = True
 
 
 class TriviaGame(Game):

@@ -124,25 +124,22 @@ def playerCheckin(game: TriviaGame, player_id: str, time: int):
 
 def roundComplete(player_data: dict[str, TriviaPlayer], winning_time: Optional[int]) -> bool:
   complete_results = []
-  # print('Winning time:', winning_time)
   for player_id in player_data:
     player = player_data[player_id]
-    # print('Time used:', player.time_used)
-    # print('Selected choice:', player.selected_choice)
     if (winning_time != None) and (player.time_used > winning_time): # Time exceeded current time
       complete_results.append(True)
     elif player.selected_choice == -1: # Not yet selected a choice
       complete_results.append(False)
     else:
       complete_results.append(True)
-  
   if False in complete_results:
     return False
   else:
      return True
 
-def completeRound(game: TriviaGame, player_data: dict[str, TriviaPlayer], completionFunction):
+def completeRound(game: TriviaGame, player_data: dict[str, TriviaPlayer], completionFunction = None):
   # Check to make sure round is complete
+  
   if roundComplete(player_data=player_data, winning_time=game.winning_time) and (len(game.round_winners) < game.question_index + 1): # If the round is complete, and the round winners have not been calculated yet
     # Get best time
     winning_time = game.winning_time
@@ -166,7 +163,8 @@ def completeRound(game: TriviaGame, player_data: dict[str, TriviaPlayer], comple
       genWinners(game)
     else:
       # print('Running completion function...')
-      completionFunction()
+      if completionFunction != None:
+        completionFunction()
 
 
 def getRoundResults(game: TriviaGame) -> RoundData:

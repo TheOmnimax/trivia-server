@@ -32,7 +32,7 @@ def completionCheck(room_code: str, player_id: str, mem_store: GcloudMemoryStora
     tg_services.completeRound(
         game,
         player_data=players,
-        completionFunction=Timer(1.0, nr).start # Wait a couple of seconds before starting the next round
+        # completionFunction=Timer(1.0, nr).start # Wait a couple of seconds before starting the next round
         )
   
   def predicate(game: TriviaGame): # True if ready to begin calculations for the next round. Using "round_complete" to make sure they do not happen multiple times
@@ -48,10 +48,20 @@ def completionCheck(room_code: str, player_id: str, mem_store: GcloudMemoryStora
   mem_store.transaction(kind='trivia_game', id=game_id, new_val_func=completeRound, predicate=predicate)
 
   current_question = tg_services.getQuestion(game)
+  print('Compl statuses:')
+  print([players[p].completed_round for p in players])
+  print('Ready statuses:')
+  print([players[p].ready for p in players])
   if game.round_complete:
     winners_ids = tg_services.getRoundResults(game).winners
     winner_names = [players[p].name for p in winners_ids]
     is_winner = player_id in winners_ids
+
+    print('Ready statuses:')
+    print([players[p].ready for p in players])
+
+    if all([players[p].ready for p in players]):
+      tg_services.nextRound(game_id=game_id, player_ids=players.keys(), transaction=mem_store.transaction)
 
     if game.game_complete: # TODO: Add delay before completing game
       return GameCompleteResponse(
@@ -126,16 +136,22 @@ async def playerCheckin(data: PlayerCheckinSchema, mem_store: GcloudMemoryStorag
     return {'started': False}
   
   def pc(player: TriviaPlayer):
-    if player.selected_choice == -1:
+    if (player.selected_choice == -1) and (data.time > player.time_used):
+      print(f'Setting time for {data.player_id} to {data.time}')
       player.time_used = data.time
+    if (game.winning_time != None) and (player.time_used > game.winning_time):
+      player.completed_round = True
+    player.ready = data.ready
+    # TODO: IMPORTANT: Update to go to next round only when every player is ready, then reset their "ready" values once each player checks in as "playing".
   player = mem_store.get(kind='player', id=data.player_id, data_type=TriviaPlayer)
   players = mem_store.getMulti(
     kind='player',
     ids=game.players,
     data_type=TriviaPlayer
     )
-  if not (player.completed_round or tg_services.roundComplete(player_data=players, winning_time=game.winning_time)): # Only add time if player is not done
-    mem_store.transaction(id=data.player_id, kind='player', new_val_func=pc)
+
+  # if not (player.completed_round or tg_services.roundComplete(player_data=players, winning_time=game.winning_time)): # Only add time if player is not done
+  mem_store.transaction(id=data.player_id, kind='player', new_val_func=pc)
 
   return completionCheck(room_code=data.room_code, player_id=data.player_id, mem_store=mem_store)
 

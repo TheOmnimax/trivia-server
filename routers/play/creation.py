@@ -80,8 +80,8 @@ async def addPlayer(data: JoinGameSchema, mem_store: GcloudMemoryStorage = Depen
     game.players.append(player_id)
     return True
 
-  game_id = mem_store.transaction(id=data.room_code, new_val_func=addMember)
-  successful = mem_store.transaction(id=game_id, new_val_func=addMember)
+  game_id = mem_store.transaction(kind='game_room', id=data.room_code, new_val_func=addMember)
+  successful = mem_store.transaction(kind='trivia_game', id=game_id, new_val_func=addPlayer)
   if game_id == None:
     raise HTTPException(status_code=404, detail='Room code not found')
   return JoinGameResponse(player_id=player_id)

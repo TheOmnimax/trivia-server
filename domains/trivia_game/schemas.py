@@ -51,6 +51,7 @@ class GetQuestionSchema(RoomSchema):
 
 class PlayerCheckinSchema(PlayerSchema):
   time: int
+  ready: bool = True
 
 class AnswerQuestion(PlayerCheckinSchema):
   answer: int # index of the question selected

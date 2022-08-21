@@ -15,7 +15,7 @@ from fastapi import HTTPException
 
 from os import environ
 
-environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'C:\\Users\\maxshaberman\\Documents\\Coding\\Keys\\max-trivia-5a46a7a8eb28.json' # TESTING ONLY
+# environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'C:\\Users\\maxshaberman\\Documents\\Coding\\Keys\\max-trivia-5a46a7a8eb28.json' # TESTING ONLY
 
 class GcloudMemoryStorage:
   def __init__(self, client: datastore.Client, code_size: int = 6, pre_accepted: list[type] = [], skipped_keys: list[str] = []):
