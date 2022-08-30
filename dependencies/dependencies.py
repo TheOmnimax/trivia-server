@@ -6,13 +6,13 @@ from daos.question_dao import QuestionsDAO
 from dependencies.model import AllRetrieval
 from dependencies.model import QuestionRetrieval
 from domains.game.model import Game, GameRoom, Player
-from domains.trivia_game.model import RoundData, TriviaGame
+from domains.trivia_game.model import RoundData, TriviaGame, TriviaPlayer
 from gcloud_utils.datastore import GcloudMemoryStorage
 
 datastore_client = datastore.Client()
 memory_storage = GcloudMemoryStorage(
   client=datastore_client,
-  pre_accepted=[Player, GameRoom, Game, TriviaGame, RoundData,]
+  pre_accepted=[Player, GameRoom, Game, TriviaGame, TriviaPlayer, RoundData,]
   )
 question_dao = QuestionsDAO(client=datastore_client)
 category_dao = CategoryDAO(client=datastore_client)

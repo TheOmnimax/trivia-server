@@ -1,8 +1,8 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
-from domains.trivia_game.services.trivia_game import getQuestion, roundComplete
+from domains.trivia_game.services.trivia_game import getPlayerNames, getQuestion, roundComplete
 from domains.trivia_game.model import TriviaGame, TriviaPlayer
-from domains.trivia_game.schemas import AdminResponse, AdminSchema, AnswerQuestion, AnswerResponse, GameCompleteResponse, PlayerCheckinResponse, PlayerCheckinSchema, ResultsResponse, RoomSchema, StillPlaying
+from domains.trivia_game.schemas import AdminResponse, AdminSchema, AnswerQuestion, AnswerResponse, PlayerCheckinResponse, PlayerCheckinSchema, ResultsResponse, RoomSchema
 from tools.randomization import genCode
 from gcloud_utils.datastore import GcloudMemoryStorage
 from domains.trivia_game import services as tg_services
@@ -44,6 +44,8 @@ def completionCheck(room_code: str, player_id: str, mem_store: GcloudMemoryStora
     )
   mem_store.transaction(kind='trivia_game', id=game_id, new_val_func=completeRound, predicate=predicate)
 
+  player_names = getPlayerNames(player_ids=game.players, player_data=players)
+  named_scores = tg_services.getNamedScores(scores=game.scores, player_data=players)
   current_question = tg_services.getQuestion(game)
   if game.round_complete:
     winners_ids = tg_services.getRoundResults(game).winners
@@ -52,39 +54,46 @@ def completionCheck(room_code: str, player_id: str, mem_store: GcloudMemoryStora
 
     if all([players[p].ready for p in players]):
       tg_services.nextRound(game_id=game_id, player_ids=players.keys(), transaction=mem_store.transaction)
-
+    
     if game.game_complete: # TODO: Add delay before completing game
-      return GameCompleteResponse(
+      return PlayerCheckinResponse(
+        player_names=player_names,
+        scores=named_scores,
+        question=current_question.label,
+        choices=current_question.choices,
         correct=tg_services.getCorrectValue(game),
+        player_complete=True,
+        round_complete=True,
+        game_complete=True,
         winners=winner_names,
         is_winner=is_winner,
       )
     else: # The round is complete, but not the game, so can display info about the round, including who won
-      return StillPlaying(
+      return PlayerCheckinResponse(
+        player_names=player_names,
+        scores=named_scores,
         question=current_question.label,
         choices=current_question.choices,
         player_complete=True,
         round_complete=True,
-        game_complete=False,
         correct=tg_services.getCorrectValue(game),
         winners=winner_names,
         is_winner=is_winner,
       )
-  elif players[player_id].selected_choice > -1:
-    return StillPlaying(
+  elif players[player_id].selected_choice > -1: # Player has already selected a choice
+    return PlayerCheckinResponse(
+      player_names=player_names,
+      scores=named_scores,
       question=current_question.label,
       choices=current_question.choices,
       player_complete=True,
-      round_complete=False,
-      game_complete=False
     )
-  else:
-    return StillPlaying(
+  else: # Active round
+    return PlayerCheckinResponse(
+      player_names=player_names,
+      scores=named_scores,
       question=current_question.label,
       choices=current_question.choices,
-      player_complete=False,
-      round_complete=False,
-      game_complete=False
     )
 
 # ROUTERS
