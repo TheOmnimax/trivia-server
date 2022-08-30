@@ -40,6 +40,6 @@ class TriviaGame(Game):
   round_winners: List[RoundData] = []
   winning_time: Optional[int] # Lowest time so far. 
   # TODO: QUESTION: To save on processing, should I add a property for the current round data (e.g. The IDs of the round winners, the current correct answer, etc)?
-  final_scores: Optional[Dict[str, int]]
+  scores: Dict[str, int] = dict()
   game_winners: Optional[List[str]] # Will Have a value once the game is complete
 

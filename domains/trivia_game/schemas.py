@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Dict, List, Optional
 from domains.trivia_game.model import CategoryData
 from domains.trivia_game.model import RoundData
 
@@ -60,6 +60,8 @@ class AnswerResponse(BaseModel):
   player_correct: bool
   
 class PlayerCheckinResponse(BaseModel):
+  player_names: List[str]
+  scores: Dict[str, int]
   question: str
   choices: list[str]
   correct: Optional[int]

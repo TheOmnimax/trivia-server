@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 from pydantic import BaseModel
 
 class Player(BaseModel):
@@ -6,7 +6,7 @@ class Player(BaseModel):
   score: int = 0
 
 class Game(BaseModel):
-  players: list[str]
+  players: List[str] = []
 
 class GameRoom(BaseModel):
   host_id: str

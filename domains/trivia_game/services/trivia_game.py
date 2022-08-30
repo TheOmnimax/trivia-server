@@ -31,7 +31,6 @@ def newGame(categories: list[str], question_dao: QuestionsDAO, num_rounds: int =
   questions = getRandomQuestions(categories=categories, num_rounds=num_rounds, question_dao=question_dao)
   # TODO: Shuffle choices
   return TriviaGame(
-    players=[],
     categories=categories,
     questions=questions,
     num_rounds=num_rounds,
@@ -45,11 +44,19 @@ def addCategories(game: TriviaGame, categories: list[CategoryData]):
 # def addQuestions(game: TriviaGame, questions: list[QuestionData]):
 #   game.questions += questions
 
-def addPlayer(game: TriviaGame, player: Player):
-  existing_codes = [player.id for player in game.players]
-  id = genUniqueCode(6, existing_codes)
-  game.players
-  return id
+def addPlayer(game: TriviaGame, player_id: str):
+  game.players.append(player_id)
+  game.scores[player_id] = 0
+
+def getPlayerNames(player_ids: List[str], player_data: Dict[str, TriviaPlayer]):
+  return [player_data[p].name for p in player_ids]
+
+def getNamedScores(scores: Dict[str, int], player_data: Dict[str, TriviaPlayer]):
+  named_scores = dict()
+  for p in scores:
+    name = player_data[p].name
+    named_scores[name] = scores[p]
+  return named_scores
 
 # def nextQuestion(game: TriviaGame) -> int: # Will probably never need the return value, but it is here if it is needed
 #     # Clean up, go to next round
@@ -153,6 +160,8 @@ def completeRound(game: TriviaGame, player_data: dict[str, TriviaPlayer], comple
         raise TriviaGameError(f'The set winning time is {game.winning_time}, but the best time saved by players is {winning_time}.')
       
     round_data = RoundData(winners=winner_ids, time=winning_time)
+    for winner_id in winner_ids:
+      game.scores[winner_id] += 1
     if len(game.round_winners) > game.question_index: # This should never be true, since the round winners should not be added multiple times for the same round, but it is here if it is needed
       game.round_winners[game.question_index] = round_data
     else:
@@ -170,22 +179,22 @@ def getRoundResults(game: TriviaGame) -> RoundData:
   return game.round_winners[len(game.round_winners) - 1] # TODO: Make so the -1 is unnneccessary
 
 def genWinners(game: TriviaGame):
-  scores = dict()
-  for player_id in game.players:
-    scores[player_id] = 0
-  
-  for round in game.round_winners:
-    round_winners = round.winners
-    for winner_id in round_winners:
-      scores[winner_id] += 1
-  game.final_scores = scores
-  top_score = max(scores.values())
+  # scores = dict()
+  # for player_id in game.players:
+  #   scores[player_id] = 0
+  # 
+  # for round in game.round_winners:
+  #   round_winners = round.winners
+  #   for winner_id in round_winners:
+  #     scores[winner_id] += 1
+  # game.scores = scores
+  top_score = max(game.scores.values())
   if top_score == 0:
     game.game_winners = []
   else:
     winners = []
-    for player_id in scores:
-      if scores[player_id] == top_score:
+    for player_id in game.scores:
+      if game.scores[player_id] == top_score:
         winners.append(player_id)
     game.game_winners = winners
 
@@ -199,7 +208,7 @@ def getWinnerNames(game: TriviaGame, player_data: Dict[str, TriviaPlayer]) -> li
     return winner_names
 
 def getResultsWithNames(game: TriviaGame, player_data: Dict[str, TriviaPlayer]) -> tuple[Dict[str, str], List[str]]:
-  scores = game.final_scores
+  scores = game.scores
   named_scores = {player_data[player_id].name:scores[player_id] for player_id in scores}
   if game.game_winners == None:
     winner_names = []

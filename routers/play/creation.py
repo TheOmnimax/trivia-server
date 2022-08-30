@@ -57,7 +57,8 @@ async def newGame(data: CreateGame, ar: dependencies.AllRetrieval = Depends(depe
   # ADD ROOM MEMBERS TO GAME
 
   def addPlayers(game: TriviaGame):
-    game_services.addPlayersToGame(game=game, player_ids=room_members.copy())
+    for p in room_members:
+      tg_services.addPlayer(game, p)
   
   mem_store.transaction(
     id=game_id,
@@ -77,7 +78,7 @@ async def addPlayer(data: JoinGameSchema, mem_store: GcloudMemoryStorage = Depen
     return game_room.game_id
   
   def addPlayer(game: TriviaGame):
-    game.players.append(player_id)
+    tg_services.addPlayer(game, player_id)
     return True
 
   game_id = mem_store.transaction(kind='game_room', id=data.room_code, new_val_func=addMember)
