@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from daos.utils import getClient
+from dependencies import websocket
+from dependencies.model import WebSocketHelpers
 from domains.trivia_game.model import TriviaGame, TriviaPlayer # TODO: QUESTION: Should this be in the main file, or in daos.utils?
 from gcloud_utils.datastore import GcloudMemoryStorage
 from domains.trivia_game.schemas import CreateGame, CreateRoomResponse, JoinGameResponse, JoinGameSchema, NewGameSchema, CreateRoomSchema
@@ -10,8 +12,59 @@ from domains.game import services as game_services
 import dependencies
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import PlainTextResponse
+from fastapi import WebSocket, WebSocketDisconnect
+
+
+async def webSocketCommands(id: str, websocket: WebSocket, manager: websocket.ConnectionManager):
+  try:
+    while True:
+      data = await websocket.receive_json()
+      if ''
+  except WebSocketDisconnect:
+    manager.disconnect(id)
+  pass
+
+
 
 router = APIRouter()
+
+@router.websocket('/create-room')
+async def webSocketPlay(websocket: WebSocket, web_socket_helpers: WebSocketHelpers = Depends(dependencies.getWebSocketHelpers)):
+  connection_manager = web_socket_helpers.connection_manager
+  mem_store = web_socket_helpers.memory_storage
+  await websocket.accept()
+  while True:
+    data = await websocket.receive_json()
+    if 'name' in data:
+      host_player = tg_services.createTriviaPlayer(name=data['name'])
+      host_id = mem_store.create(kind='player', data=host_player)
+      connection_manager.addWebSocket(host_id, websocket)
+      game_room = game_services.createGameRoom(host_id=host_id)
+      room_code = mem_store.create(kind='game_room', data=game_room)
+      connection_manager.sendData(host_id,
+        CreateRoomResponse(
+          room_code=room_code,
+          host_id=host_id
+        )
+      )
+      break
+  
+  pass
+
+@router.websocket('/join-game')
+async def webSocketPlay(websocket: WebSocket, web_socket_helpers: WebSocketHelpers = Depends(dependencies.getWebSocketHelpers)):
+  pass
+
+@router.websocket('/create-room')
+async def createRoom(data: CreateRoomSchema, web_socket_helpers: WebSocketHelpers = Depends(dependencies.getWebSocketHelpers)):
+  connection_manager = web_socket_helpers.connection_manager
+  mem_store = web_socket_helpers.memory_storage
+  host_player = tg_services.createTriviaPlayer(name=data.host_name)
+  host_id = mem_store.create(kind='player', data=host_player)
+  connection_manager.connect(host_id)
+
+  game_room = game_services.createGameRoom(host_id=host_id)
+  room_code = mem_store.create(kind='game_room', data=game_room)
 
 @router.post('/create-room')
 async def createRoom(data: CreateRoomSchema, mem_store: GcloudMemoryStorage = Depends(dependencies.getMemoryStorage)): # Create a room with a single player, the host

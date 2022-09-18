@@ -1,8 +1,9 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, WebSocket
+from dependencies.model import WebSocketHelpers
 from domains.trivia_game.services.trivia_game import getPlayerNames, getQuestion, roundComplete
 from domains.trivia_game.model import TriviaGame, TriviaPlayer
-from domains.trivia_game.schemas import AdminResponse, AdminSchema, AnswerQuestion, AnswerResponse, PlayerCheckinResponse, PlayerCheckinSchema, ResultsResponse, RoomSchema
+from domains.trivia_game.schemas import AdminResponse, AdminSchema, AnswerQuestion, AnswerResponse, JoinGameSchema, PlayerCheckinResponse, PlayerCheckinSchema, ResultsResponse, RoomSchema
 from tools.randomization import genCode
 from gcloud_utils.datastore import GcloudMemoryStorage
 from domains.trivia_game import services as tg_services
@@ -97,6 +98,12 @@ def completionCheck(room_code: str, player_id: str, mem_store: GcloudMemoryStora
     )
 
 # ROUTERS
+
+@router.websocket('/play')
+async def playSocket(data: JoinGameSchema, web_socket_helpers: WebSocketHelpers = Depends(dependencies.getWebSocketHelpers)):
+  connection_manager = web_socket_helpers.connection_manager
+  mem_store = web_socket_helpers.memory_storage
+  pass
 
 @router.post('/start-game')
 async def startGame(data: AdminSchema, mem_store: GcloudMemoryStorage = Depends(dependencies.getMemoryStorage)):
@@ -193,3 +200,14 @@ async def getResults(data: RoomSchema, mem_store: GcloudMemoryStorage = Depends(
       scores=named_scores,
       winners=winner_names
   )
+
+@router.websocket('/socket')
+async def socketData(
+  websocket: WebSocket,
+  mem_store: GcloudMemoryStorage = Depends(dependencies.getMemoryStorage)
+):
+  await websocket.accept()
+  while True:
+    data = await websocket.receive_json()
+    await websocket.send_text(f'Data: {data}')
+  pass
