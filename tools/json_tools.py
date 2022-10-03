@@ -124,12 +124,15 @@ class JsonConverter:
     if _isBuiltInType(data):
       return data
     elif data_type in [list, set]:
+      data = data.copy()
       return [self.baseModelToJson(d) for d in data]
     elif data_type == dict:
+      data = data.copy()
       for key in data:
         data[key] = self.baseModelToJson(data[key])
       return data
     else: # Is a BaseModel (hopefully)
+      data = data.copy()
       json_data = data.__dict__
       self._addAcceptedTag(data_type)
       data_type_str = data_type.__name__
