@@ -3,7 +3,7 @@ logging.getLogger().addHandler(logging.StreamHandler()) # For testing
 
 from os import environ
 
-# environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'C:\\Users\\maxshaberman\\Documents\\Coding\\Keys\\max-trivia-5a46a7a8eb28.json' # TESTING ONLY
+environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'C:\\Users\\maxshaberman\\Documents\\Coding\\Keys\\max-trivia-5a46a7a8eb28.json' # TESTING ONLY
 
 import google.cloud.logging
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,24 +17,21 @@ from dependencies import dependencies
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import PlainTextResponse
 
+from constants.constants import origins
+from dependencies.sio import socket_app
+from routers.play.creation import *
+from routers.play.playing import *
+
 client = google.cloud.logging.Client()
 client.setup_logging()
 
 # TODO: Set categories as labels
 app = FastAPI()
 
-router = APIRouter()
+app.mount('/', socket_app)
 
-origins = [
-    'http://localhost',
-    'http://localhost:8080',
-    'http://localhost:51377',
-    'https://localhost:51377',
-    'https://max-trivia.web.app',
-    'http://max-trivia.web.app',
-    'https://trivia-question-manager.web.app',
-    'http://trivia-question-manager.web.app'
-]
+
+
 
 app.add_middleware(
     CORSMiddleware,

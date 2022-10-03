@@ -1,10 +1,10 @@
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Set
 from pydantic import BaseModel
 from domains.game.model import Game, Player
 from domains.trivia.model import QuestionData, CategoryData
 
 class RoundData(BaseModel):
-  winners: list[str]
+  winner: str
   time: Optional[int]
 
 
@@ -35,9 +35,12 @@ class TriviaGame(Game):
   questions: List[QuestionData]
   num_rounds: int
   question_index: int = -1 # Starts at -1 because game has not yet started
+  complete_players: Set[str] = set()
+  # current_winner: str # ID of player who wins this round
   game_complete: bool = False
   round_complete: bool = False
-  round_winners: List[RoundData] = []
+  round_winner: Optional[str] # Winner of the current round, if any
+  round_winners: List[Optional[str]] = []
   winning_time: Optional[int] # Lowest time so far. 
   # TODO: QUESTION: To save on processing, should I add a property for the current round data (e.g. The IDs of the round winners, the current correct answer, etc)?
   scores: Dict[str, int] = dict()

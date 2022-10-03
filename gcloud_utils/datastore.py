@@ -3,6 +3,7 @@
 from genericpath import exists
 from html import entities
 import json
+from typing import List
 from google.cloud import datastore
 import logging
 import json
@@ -24,28 +25,60 @@ class GcloudMemoryStorage:
     self._lock = threading.Lock()
     self._json_converter = JsonConverter(pre_accepted=pre_accepted, skipped_keys=skipped_keys)
   
+  def _getEntityData(self, key: datastore.Key, predicate = None):
+    entity = self._client.get(key)
+    if (entity == None):
+      return None
+    else:
+      server_data = self._json_converter.jsonToBaseModel(entity)
+
+      if (predicate != None) and (not predicate(server_data)):
+        return None
+      return server_data
+    pass
+
+  def _updateEntity(self, key: datastore.Key, new_data):
+    entity = datastore.Entity(key) # TODO: Check if entity has to be retrieved each time
+    json_data = self._json_converter.baseModelToJson(new_data)
+    entity.update(json_data)
+    self._client.put(entity)
+
+  
   def transaction(self, kind: str, id: str, new_val_func, predicate = None):
     if (id == '' or id == None):
       return None
     key = self._client.key(kind, id)
     with self._client.transaction():
-      entity = self._client.get(key)
-      if (entity == None):
-        return None
-      else:
-        server_data = self._json_converter.jsonToBaseModel(entity)
-
-        if (predicate != None) and (not predicate(server_data)):
-          return None
-
-        data = new_val_func(server_data)
-        entity = datastore.Entity(key)
-        new_data = self._json_converter.baseModelToJson(server_data)
-        entity.update(new_data)
-        self._client.put(entity)
-        return data
+      server_data = self._getEntityData(key, predicate)
+      return_data = new_val_func(server_data)
+      self._updateEntity(key, server_data)
+      return return_data
+  
+  async def asyncTransaction(self, kind: str, id: str, new_val_func, predicate = None):
+    if (id == '' or id == None):
+      return None
+    key = self._client.key(kind, id)
+    with self._client.transaction():
+      server_data = self._getEntityData(key, predicate)
+      data = await new_val_func(server_data)
+      self._updateEntity(key, server_data)
+      return data
 
   def transactionMulti(self,
+    kind: str,
+    ids: List[str],
+    new_val_func,
+    predicate = None,
+    ):
+    all_data = dict
+    for id in ids:
+      all_data[id] = self.transaction(kind, id, new_val_func, predicate)
+    return all_data
+
+
+
+
+  def transactionMultiKind(self,
     pairs: tuple[str, str],
     new_val_func
     ):

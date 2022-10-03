@@ -40,7 +40,15 @@ class JoinGameSchema(BaseModel):
   player_name: str
 
 class JoinGameResponse(BaseModel):
+  successful: bool
   player_id: str
+
+class GameResponse(BaseModel):
+  player_names: List[str]
+
+class StartGame(BaseModel):
+  allowed: bool
+  started: bool
 
 class AdminResponse(BaseModel):
   successful: bool
@@ -49,16 +57,20 @@ class AdminResponse(BaseModel):
 class GetQuestionSchema(RoomSchema):
   room_code: str
 
-class PlayerCheckinSchema(PlayerSchema):
-  time: int
-  ready: bool = True
-
-class AnswerQuestion(PlayerCheckinSchema):
+class AnswerQuestion(PlayerSchema):
   answer: int # index of the question selected
 
 class AnswerResponse(BaseModel):
   player_correct: bool
+
+
+class RoundComplete(BaseModel):
+  round_complete: bool
+  is_winner: bool
+  winner_name: str
+  correct: bool
   
+
 class PlayerCheckinResponse(BaseModel):
   player_names: List[str]
   scores: Dict[str, int]
@@ -70,6 +82,10 @@ class PlayerCheckinResponse(BaseModel):
   game_complete: bool = False
   winners: Optional[list[str]]
   is_winner: Optional[bool]
+
+class NextRoundSchema(BaseModel):
+  question: str
+  choices: List[str]
 
 class ResultsResponse(BaseModel):
   scores: dict[str, int]

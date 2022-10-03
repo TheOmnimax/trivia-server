@@ -1,5 +1,29 @@
 from typing import List, Dict
 from fastapi import WebSocket, WebSocketDisconnect
+import socketio
+import logging
+
+class SocketioManager:
+  def __init__(self, sio: socketio.AsyncServer) -> None:
+    self._connections = []
+    self._sio = sio
+  
+  async def sendData(self, id: str, event: str, data) -> bool:
+    try:
+      await self._sio.emit(event, data, to=id)
+      return True
+    except:
+      logging.exception(f'Unable to send to {id}')
+      return False
+  
+  async def sendDataMulti(self, ids: List[str], event: str, data) -> List[bool]:
+    results = []
+    for id in ids:
+      # TODO: Allow data types other than dicts
+      results.append(await self.sendData(id, event, dict(data)))
+    return results
+  
+  # TODO: Add schema check for incoming data
 
 class ConnectionManager:
   def __init__(self):

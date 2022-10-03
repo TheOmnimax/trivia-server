@@ -2,7 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from daos.utils import getClient
 from dependencies import websocket
+from dependencies.dependencies import getMemoryStorage
 from dependencies.model import WebSocketHelpers
+from domains.general.schemas import ConnectionSchema
 from domains.trivia_game.model import TriviaGame, TriviaPlayer # TODO: QUESTION: Should this be in the main file, or in daos.utils?
 from gcloud_utils.datastore import GcloudMemoryStorage
 from domains.trivia_game.schemas import CreateGame, CreateRoomResponse, JoinGameResponse, JoinGameSchema, NewGameSchema, CreateRoomSchema
@@ -13,79 +15,51 @@ import dependencies
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import PlainTextResponse
 from fastapi import WebSocket, WebSocketDisconnect
+import socketio
+from dependencies.sio import sio, socket_manager
 
 
-async def webSocketCommands(id: str, websocket: WebSocket, manager: websocket.ConnectionManager):
-  try:
-    while True:
-      data = await websocket.receive_json()
-      if ''
-  except WebSocketDisconnect:
-    manager.disconnect(id)
-  pass
+# async def webSocketCommands(id: str, websocket: WebSocket, manager: websocket.ConnectionManager):
+#   try:
+#     while True:
+#       data = await websocket.receive_json()
+#       if ''
+#   except WebSocketDisconnect:
+#     manager.disconnect(id)
+#   pass
 
 
 
 router = APIRouter()
 
-@router.websocket('/create-room')
-async def webSocketPlay(websocket: WebSocket, web_socket_helpers: WebSocketHelpers = Depends(dependencies.getWebSocketHelpers)):
-  connection_manager = web_socket_helpers.connection_manager
-  mem_store = web_socket_helpers.memory_storage
-  await websocket.accept()
-  while True:
-    data = await websocket.receive_json()
-    if 'name' in data:
-      host_player = tg_services.createTriviaPlayer(name=data['name'])
-      host_id = mem_store.create(kind='player', data=host_player)
-      connection_manager.addWebSocket(host_id, websocket)
-      game_room = game_services.createGameRoom(host_id=host_id)
-      room_code = mem_store.create(kind='game_room', data=game_room)
-      connection_manager.sendData(host_id,
-        CreateRoomResponse(
-          room_code=room_code,
-          host_id=host_id
-        )
-      )
-      break
-  
-  pass
+@sio.on('connect')
+async def connect(sid, data):
+  await sio.emit('connect', dict(ConnectionSchema(sid=sid)))
 
-@router.websocket('/join-game')
-async def webSocketPlay(websocket: WebSocket, web_socket_helpers: WebSocketHelpers = Depends(dependencies.getWebSocketHelpers)):
-  pass
 
-@router.websocket('/create-room')
-async def createRoom(data: CreateRoomSchema, web_socket_helpers: WebSocketHelpers = Depends(dependencies.getWebSocketHelpers)):
-  connection_manager = web_socket_helpers.connection_manager
-  mem_store = web_socket_helpers.memory_storage
-  host_player = tg_services.createTriviaPlayer(name=data.host_name)
-  host_id = mem_store.create(kind='player', data=host_player)
-  connection_manager.connect(host_id)
-
-  game_room = game_services.createGameRoom(host_id=host_id)
-  room_code = mem_store.create(kind='game_room', data=game_room)
-
-@router.post('/create-room')
-async def createRoom(data: CreateRoomSchema, mem_store: GcloudMemoryStorage = Depends(dependencies.getMemoryStorage)): # Create a room with a single player, the host
-  # mem_store = ar.memory_storage
-
-  host_player = tg_services.createTriviaPlayer(name=data.host_name)
+@sio.on('create-room')
+async def createRoom(sid, data):
+  data = CreateRoomSchema(**data)
+  mem_store = dependencies.getMemoryStorage()
+  host_player = tg_services.createTriviaPlayer(name=data.host_name, sid=sid)
   host_id = mem_store.create(kind='player', data=host_player)
   game_room = game_services.createGameRoom(host_id=host_id)
   room_code = mem_store.create(kind='game_room', data=game_room)
-  return  CreateRoomResponse(
+  await sio.emit('create-room', data=dict(CreateRoomResponse(
     room_code=room_code,
     host_id=host_id
-  )
+  )))
 
-@router.post('/new-game')
-async def newGame(data: CreateGame, ar: dependencies.AllRetrieval = Depends(dependencies.allRetrieval)):
+@sio.on('new-game')
+async def newGame(sid, data):
+  data = CreateGame(**data)
   # PREPARATION
   room_code = data.room_code
-  mem_store = ar.memory_storage
-  question_dao = ar.question_dao
-  category_dao = ar.category_dao
+  mem_store = dependencies.getMemoryStorage()
+  deps = dependencies.allRetrieval()
+  mem_store = deps.memory_storage
+  question_dao = deps.question_dao
+  category_dao = deps.category_dao
   categories = category_dao.getCatsFromIds(ids=data.categories)
 
   # CREATE NEW GAME
@@ -118,11 +92,13 @@ async def newGame(data: CreateGame, ar: dependencies.AllRetrieval = Depends(depe
     kind='trivia_game',
     new_val_func=addPlayers
     )
+  await sio.emit('new-game', data={'successful': True})
 
-  return {'successful': True}
 
-@router.post('/add-player')
-async def addPlayer(data: JoinGameSchema, mem_store: GcloudMemoryStorage = Depends(dependencies.getMemoryStorage)):
+@sio.on('add-player')
+async def newGame(sid, data):
+  data = JoinGameSchema(**data)
+  mem_store = dependencies.getMemoryStorage()
   new_player = tg_services.createTriviaPlayer(name=data.player_name)
   player_id = mem_store.create(kind='player', data=new_player)
 
@@ -137,6 +113,8 @@ async def addPlayer(data: JoinGameSchema, mem_store: GcloudMemoryStorage = Depen
   game_id = mem_store.transaction(kind='game_room', id=data.room_code, new_val_func=addMember)
   successful = mem_store.transaction(kind='trivia_game', id=game_id, new_val_func=addPlayer)
   if game_id == None:
-    raise HTTPException(status_code=404, detail='Room code not found')
-  return JoinGameResponse(player_id=player_id)
+    JoinGameResponse(successful=False, player_id=player_id)
+  else:
+    response = JoinGameResponse(successful=True, player_id='')
+  await sio.emit('create-room', data=dict(response))
 

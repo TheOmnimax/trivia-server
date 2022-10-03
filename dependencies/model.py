@@ -9,11 +9,11 @@ class QuestionRetrieval(BaseModel, arbitrary_types_allowed=True): # TODO: Questi
   question_dao: QuestionsDAO
   memory_storage: GcloudMemoryStorage
 
-class WebSocketHelpers(BaseModel):
+class WebSocketHelpers(BaseModel, arbitrary_types_allowed=True):
   memory_storage: GcloudMemoryStorage
   connection_manager: ConnectionManager
 
 
-class AllRetrieval(QuestionRetrieval):
+class AllRetrieval(QuestionRetrieval, arbitrary_types_allowed=True):
   category_dao: CategoryDAO
   connection_manager: ConnectionManager

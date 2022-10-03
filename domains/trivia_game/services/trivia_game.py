@@ -12,9 +12,10 @@ from threading import Timer
 class TriviaGameError(Exception):
   pass
 
-def createTriviaPlayer(name: str) -> TriviaPlayer:
+def createTriviaPlayer(name: str, sid: str) -> TriviaPlayer:
   return TriviaPlayer(
-    name=name
+    name=name,
+    socket=sid
   )
 
 def getRandomQuestions(categories: list[CategoryData], num_rounds: int, question_dao: QuestionsDAO) -> list[QuestionData]:
@@ -83,120 +84,60 @@ def getCorrectValue(game: TriviaGame) -> int:
 def addRoundTime(game: TriviaGame, player_id: str, time: int): # How much time has passed for the player so far
   game.current_round_times[player_id] = time
 
-def _playerAnswered(player: TriviaPlayer, selected_choice: int):
+def _playerAnswered(game: TriviaGame, player: TriviaPlayer, player_id: str, selected_choice: int):
   if player.selected_choice > -1:
+    return
     raise HTTPException(status_code=428, detail='Player already answered question.')
   player.completed_round = True
   player.selected_choice = selected_choice
+  game.complete_players.add(player_id)
 
-def makePlayerCorrect(game: TriviaGame, player: TriviaPlayer, selected_choice: int, time: int):
-  _playerAnswered(player=player, selected_choice=selected_choice)
-  player.time_used = time
-  if game.winning_time == None:
-    game.winning_time = time
-  elif time < game.winning_time:
-      game.winning_time = time
 
-def makePlayerWrong(player: TriviaPlayer, selected_choice: int):
-  _playerAnswered(player=player, selected_choice=selected_choice)
+def makePlayerCorrect(game: TriviaGame, player_id: str, player: TriviaPlayer, selected_choice: int):
+  game.round_complete = True
+  _playerAnswered(player=player, player_id=player_id, selected_choice=selected_choice)
+  if game.round_winner == None:
+    game.round_winner = player_id
+  
 
-def playerCheckin(game: TriviaGame, player_id: str, time: int):
-  """Takes the player and their current time so far, and determines if their time has run out so far, based on the winning time so far.
 
-  Args:
-      game (TriviaGame): Current game
-      player (Player): Player checking in
-      time (int): How much time has passed for the player so far
-  """
-  if (time > game.winning_time) and (player_id not in game.complete_players):
-    game.complete_players[player_id] = time
-    
+def makePlayerWrong(game: TriviaGame, player: TriviaPlayer, player_id: str, selected_choice: int):
+  _playerAnswered(game=game, player=player, player_id=player_id, selected_choice=selected_choice)
+  if len(game.complete_players) >= len(game.players):
+    game.round_complete = True
 
 # def roundComplete(game: TriviaGame) -> bool:
-#   """Determines if everyone has completed the round yet
+#   return game.round_complete or len(game.complete_players) >= len(game.players)
 
-#   Args:
-#       game (TriviaGame): Current game
+def resetPlayer(player: TriviaPlayer):
+  player.completed_round = False
+  player.time_used = 0
+  player.selected_choice = -1
+  player.ready = True
 
-#   Returns:
-#       bool: True if the round is complete, and they're ready to move on, and False otherwise
-#   """
-#   if len(game.players) == len(game.complete_players):
-#     return True
-#   elif len(game.players) > len(game.complete_players):
-#     return False
-#   else: # This should NEVER be true, so there should be some sort of error if there are more complete players than total players
-#     return None
-
-
-def roundComplete(player_data: dict[str, TriviaPlayer], winning_time: Optional[int]) -> bool:
-  complete_results = []
-  for player_id in player_data:
-    player = player_data[player_id]
-    if (winning_time != None) and (player.time_used > winning_time): # Time exceeded current time
-      complete_results.append(True)
-    elif player.selected_choice == -1: # Not yet selected a choice
-      complete_results.append(False)
-    else:
-      complete_results.append(True)
-  if False in complete_results:
-    return False
-  else:
-     return True
-
-def completeRound(game: TriviaGame, player_data: dict[str, TriviaPlayer], completionFunction = None):
-  # Check to make sure round is complete
-  
-  if roundComplete(player_data=player_data, winning_time=game.winning_time) and (len(game.round_winners) < game.question_index + 1): # If the round is complete, and the round winners have not been calculated yet
-    # Get best time
-    winning_time = game.winning_time
-    current_question = game.questions[game.question_index]
-    correct_ids = [p for p in player_data if player_data[p].selected_choice == current_question.correct] # IDs of players who selected the correct choice
-    if (winning_time == None) or (len(correct_ids) == 0):
-      winner_ids = list()
-    else:
-      winner_ids = [p for p in correct_ids if player_data[p].time_used == winning_time] # IDs of players who selected the correct choice, AND their time used matches the winning time
-      if len(winner_ids) == 0:
-        raise TriviaGameError(f'The set winning time is {game.winning_time}, but the best time saved by players is {winning_time}.')
-      
-    round_data = RoundData(winners=winner_ids, time=winning_time)
-    for winner_id in winner_ids:
-      game.scores[winner_id] += 1
-    if len(game.round_winners) > game.question_index: # This should never be true, since the round winners should not be added multiple times for the same round, but it is here if it is needed
-      game.round_winners[game.question_index] = round_data
-    else:
-      game.round_winners.append(round_data)
-    
+def completeRound(game: TriviaGame):
+  if game.round_complete:
+    winner_id = game.round_winner
+    game.round_complete = False
+    if len(game.round_winners) < game.question_index:
+      game.round_winners.append(winner_id)
+      # game.question_index += 1
+    game.complete_players = set()
     if game.question_index + 1 >= len(game.questions): # Game is complete
       game.game_complete = True
       genWinners(game)
-    else:
-      if completionFunction != None:
-        completionFunction()
+    pass
 
 
 def getRoundResults(game: TriviaGame) -> RoundData:
   return game.round_winners[len(game.round_winners) - 1] # TODO: Make so the -1 is unnneccessary
 
 def genWinners(game: TriviaGame):
-  # scores = dict()
-  # for player_id in game.players:
-  #   scores[player_id] = 0
-  # 
-  # for round in game.round_winners:
-  #   round_winners = round.winners
-  #   for winner_id in round_winners:
-  #     scores[winner_id] += 1
-  # game.scores = scores
-  top_score = max(game.scores.values())
-  if top_score == 0:
-    game.game_winners = []
-  else:
-    winners = []
-    for player_id in game.scores:
-      if game.scores[player_id] == top_score:
-        winners.append(player_id)
-    game.game_winners = winners
+  scores = {id:0 for id in game.players}
+  for id in game.round_winners:
+    if id != None:
+      scores[id] += 1
+  game.scores = scores
 
 def getWinnerNames(game: TriviaGame, player_data: Dict[str, TriviaPlayer]) -> list[str]:
   if game.game_winners == None:
@@ -223,12 +164,13 @@ def startGame(game: TriviaGame):
   else:
     return False
 
-def nextRound(game_id: str, player_ids: list[str], transaction):
-  def resetGameTime(game: TriviaGame) -> list[str]:
+def nextRound(game_id: str, player_ids: list[str], transaction) -> TriviaGame:
+  def resetGameTime(game: TriviaGame) -> TriviaGame:
     game.winning_time = None
     if game.question_index < len(game.questions): # Only add if there are remaining questions
       game.round_complete = False
       game.question_index += 1
+    return game
     # return game.players
   
   def resetPlayer(player: TriviaPlayer):
@@ -238,4 +180,4 @@ def nextRound(game_id: str, player_ids: list[str], transaction):
   
   for p in player_ids:
     transaction(kind='player', id=p, new_val_func=resetPlayer)
-  transaction(kind='trivia_game', id=game_id, new_val_func=resetGameTime)
+  return transaction(kind='trivia_game', id=game_id, new_val_func=resetGameTime)

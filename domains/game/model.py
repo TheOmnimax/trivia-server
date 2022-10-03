@@ -4,6 +4,7 @@ from pydantic import BaseModel
 class Player(BaseModel):
   name: str
   score: int = 0
+  socket: str
 
 class Game(BaseModel):
   players: List[str] = []
