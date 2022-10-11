@@ -68,7 +68,7 @@ class RoundComplete(BaseModel):
   round_complete: bool
   is_winner: bool
   winner_name: str
-  correct: bool
+  correct: int
   
 
 class PlayerCheckinResponse(BaseModel):

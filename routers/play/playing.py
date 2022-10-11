@@ -11,6 +11,7 @@ from tools.randomization import genCode
 from gcloud_utils.datastore import GcloudMemoryStorage
 from domains.trivia_game import services as tg_services
 from threading import Timer
+from asyncio import sleep
 
 import dependencies
 
@@ -18,15 +19,9 @@ from dependencies.sio import sio, socket_manager
 
 router = APIRouter()
 
-def _getSids(game: Game, mem_store: GcloudMemoryStorage):
-  player_ids = game.players
-  players = mem_store.getMulti(kind='player', ids=player_ids, data_type=TriviaPlayer)
-  sids = [p.sid for p in players]
-  return sids
-
-async def _sendSidsMulti(game: Game, mem_store: GcloudMemoryStorage, event: str, data):
-  sids = _getSids(game, mem_store)
-  return await socket_manager.sendDataMulti(ids=sids, event=event, data=data)
+# async def _sendSidsMulti(game: Game, mem_store: GcloudMemoryStorage, event: str, data):
+#   sids = _getSids(game, mem_store)
+#   return await socket_manager.sendDataMulti(ids=sids, event=event, data=data)
 
 def _getGameId(room_code: str, mem_store: GcloudMemoryStorage) -> str:
   game_room = mem_store.get(kind='game_room', id=room_code)
@@ -246,7 +241,7 @@ async def answerQuestion(sid, data):
   if round_complete:
     # TODO: Find why question data does not become QuestionData
     game = mem_store.transaction(kind='trivia_game', id=game_id, new_val_func=completeRound)
-    player_data = mem_store.getMulti(kind='player', ids=game.players, data_type=TriviaPlayer)
+    player_data = _getPlayerDict(player_ids=game.players, mem_store=mem_store)
 
     round_winner = game.round_winner
     if round_winner != None:
@@ -258,19 +253,32 @@ async def answerQuestion(sid, data):
     for player_id in player_data:
       player = player_data[player_id]
       sid = player.socket
+      print('Emitting round complete')
       await sio.emit('round-complete',
         dict(RoundComplete(
           round_complete=True,
           is_winner=player_id==game.round_winner,
           winner_name=winner_name,
-          correct=player.selected_choice == correct_answer
+          correct=correct_answer
         )),
         to=sid
         )
+      print('Emitted to', sid)
     
-    time.sleep(1)
+    print('Sleeping')
+    await sleep(1)
+    print('Done sleeping')
+    print(game.game_complete)
     if game.game_complete:
       named_scores, winner_names = tg_services.getResultsWithNames(game=game, player_data=player_data)
+      sids = _getSocketIds(player_data=player_data)
+      for sid in sids:
+        await sio.emit('game-complete',
+        dict(ResultsResponse(
+          scores=named_scores,
+          winners=winner_names
+        )),
+        to=sid)
     else:
       game = tg_services.nextRound(game_id=game_id, player_ids=player_data, transaction=mem_store.transaction)
       await _nextRound(game, player_data)
@@ -284,7 +292,7 @@ async def getResults(sid, data):
   game_id, game = _getGame(room_code=data.room_code, mem_store=mem_store)
   player_data = mem_store.getMulti(kind='player', ids=game.players, data_type=TriviaPlayer)
   named_scores, winner_names = tg_services.getResultsWithNames(game=game, player_data=player_data)
-  sio.emit('get-results',
+  await sio.emit('get-results',
     dict(ResultsResponse(
       scores=named_scores,
       winners=winner_names

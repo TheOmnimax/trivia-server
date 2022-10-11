@@ -66,7 +66,7 @@ async def newGame(sid, data):
   new_game = tg_services.newGame( # Create the new game
     categories=categories,
     question_dao=question_dao,
-    num_rounds=5 # TODO: Update this to be customizable
+    num_rounds=data.num_rounds
     )
   game_id = mem_store.create('trivia_game', new_game) # Add the new game to the server
 
