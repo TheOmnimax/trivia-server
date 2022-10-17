@@ -11,5 +11,5 @@ class Game(BaseModel):
 
 class GameRoom(BaseModel):
   host_id: str
-  members: list[str]
+  members: List[str]
   game_id: Optional[str]

@@ -71,7 +71,7 @@ async def newGame(sid, data):
   game_id = mem_store.create('trivia_game', new_game) # Add the new game to the server
 
   # ADD TO GAME ROOM
-  def addGameToGameRoom(game_room: GameRoom) -> list[str]:
+  def addGameToGameRoom(game_room: GameRoom) -> List[str]:
     game_services.addGame(game_room=game_room, game_id=game_id)
     return game_room.members
   

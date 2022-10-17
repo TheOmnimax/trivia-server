@@ -6,6 +6,7 @@ from .shared_functions import DatastoreDAO
 from . import category_dao
 from domains.trivia.model import QuestionData
 from domains.trivia.schemas import NewQuestionSchema, QuestionSchema, QuestionUpdate
+from typing import List
 
 class QuestionsDAO(DatastoreDAO):
   def __init__(self, client: datastore.Client):
@@ -37,33 +38,33 @@ class QuestionsDAO(DatastoreDAO):
     question_data_raw = self._client.get(key=question_key)
     return self._rawToQuestion(question_data_raw)
 
-  def getQuestions(self, ids: list[str]) -> list[QuestionData]:
+  def getQuestions(self, ids: List[str]) -> List[QuestionData]:
     keys = [self._client.key('question', id) for id in ids]
     question_data_raw = self._client.get_multi(keys=keys)
     return [self._rawToQuestion(data) for data in question_data_raw]
   
-  def _getRawQuestionsFromCat(self, cat_id: str) -> list[datastore.Entity]:
+  def _getRawQuestionsFromCat(self, cat_id: str) -> List[datastore.Entity]:
     """Takes a category IDs, and returns a list of "question" entities that uses that category. Those question entities are to be turned into "QuestionData" objects later.
 
     Args:
         cat_id (str): Category ID
 
     Returns:
-        list[datastore.Entity]: List of Google Datastore question entities that contains the category provided.
+        List[datastore.Entity]: List of Google Datastore question entities that contains the category provided.
     """
     query = self._client.query(kind='question')
     query.add_filter('categories', '=', cat_id)
 
     return list(query.fetch())
   
-  def _getRawQuestionsFromCats(self, cat_ids: list[str]) -> list[datastore.Entity]:
+  def _getRawQuestionsFromCats(self, cat_ids: List[str]) -> List[datastore.Entity]:
     """Takes a list of category IDs, and returns a list of "question" entities that use those categories. Those question entities are to be turned into "QuestionData" objects later.
 
     Args:
-        cat_ids (list[str]): List of category IDs
+        cat_ids (List[str]): List of category IDs
 
     Returns:
-        list[datastore.Entity]: List of Google Datastore question entities that contain any of the categories provided.
+        List[datastore.Entity]: List of Google Datastore question entities that contain any of the categories provided.
     """
     all_entities = dict()
     for id in cat_ids:
@@ -74,19 +75,19 @@ class QuestionsDAO(DatastoreDAO):
           all_entities[entity_id] = entity
     return list(all_entities.values())
 
-  def getAllQuestions(self) -> list[QuestionData]:
+  def getAllQuestions(self) -> List[QuestionData]:
     query = self._client.query(kind='question')
     raw_data = list(query.fetch())
 
     return [self._rawToQuestion(d) for d in raw_data]
 
 
-  def getQuestionsFromCat(self, cat_id: str) -> list[QuestionData]:
+  def getQuestionsFromCat(self, cat_id: str) -> List[QuestionData]:
     results_raw = self._getRawQuestionsFromCat(cat_id=cat_id)
     results = [self._rawToQuestion(d) for d in results_raw]
     return results
 
-  def getQuestionsFromCats(self, cat_ids: list[str]) -> list[QuestionData]:
+  def getQuestionsFromCats(self, cat_ids: List[str]) -> List[QuestionData]:
     question_data = dict()
     for id in cat_ids:
       new_data = self.getQuestionsFromCat(id)
@@ -143,7 +144,7 @@ class QuestionsDAO(DatastoreDAO):
       entity.update({'categories': categories})
     self._client.put_multi(question_entities)
 
-  def deleteCatsFromQuestions(self, cat_ids: list[str]):
+  def deleteCatsFromQuestions(self, cat_ids: List[str]):
     question_entities = self._getRawQuestionsFromCats(cat_ids)
     for entity in question_entities:
       categories = entity['categories']

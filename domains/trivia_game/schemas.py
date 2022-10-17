@@ -26,7 +26,7 @@ class CreateRoomResponse(BaseModel):
 class CreateGame(BaseModel):
   room_code: str
   host_id: str
-  categories: list[str]
+  categories: List[str]
   num_rounds: int = 10
 
 class NewGameSchema(BaseModel):
@@ -75,12 +75,12 @@ class PlayerCheckinResponse(BaseModel):
   player_names: List[str]
   scores: Dict[str, int]
   question: str
-  choices: list[str]
+  choices: List[str]
   correct: Optional[int]
   player_complete: bool = False
   round_complete: bool = False
   game_complete: bool = False
-  winners: Optional[list[str]]
+  winners: Optional[List[str]]
   is_winner: Optional[bool]
 
 class NextRoundSchema(BaseModel):
@@ -88,5 +88,5 @@ class NextRoundSchema(BaseModel):
   choices: List[str]
 
 class ResultsResponse(BaseModel):
-  scores: dict[str, int]
-  winners: list[str]
+  scores: Dict[str, int]
+  winners: List[str]

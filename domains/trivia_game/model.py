@@ -10,12 +10,12 @@ class RoundData(BaseModel):
 
 # NEW?
 # class RoundData(BaseModel):
-#   complete: list[str]
-#   winners: list[Player]
-#   winner_ids: list[str]
+#   complete: List[str]
+#   winners: List[Player]
+#   winner_ids: List[str]
 #   question: QuestionData
 #   correct: int
-#   round_times: dict[str, int]
+#   round_times: Dict[str, int]
 
 class TriviaPlayer(Player):
   completed_round: bool = False

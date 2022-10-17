@@ -1,5 +1,5 @@
 import time
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from fastapi import APIRouter, Depends, HTTPException, WebSocket
 from dependencies.model import WebSocketHelpers
 from domains.game.model import Game, GameRoom
@@ -28,7 +28,7 @@ def _getGameId(room_code: str, mem_store: GcloudMemoryStorage) -> str:
   game_id = game_room.game_id
   return game_id
 
-def _getGame(room_code: str, mem_store: GcloudMemoryStorage) -> tuple[str, TriviaGame]:
+def _getGame(room_code: str, mem_store: GcloudMemoryStorage) -> Tuple[str, TriviaGame]:
   game_id = _getGameId(room_code=room_code, mem_store=mem_store)
   game = mem_store.get(kind='trivia_game', id=game_id, data_type=TriviaGame)
   return (game_id, game)

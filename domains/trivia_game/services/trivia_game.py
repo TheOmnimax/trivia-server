@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from domains.trivia_game.model import TriviaGame, RoundData, TriviaPlayer
 from domains.game.model import Player
 from domains.trivia.model import QuestionData, CategoryData
@@ -18,7 +18,7 @@ def createTriviaPlayer(name: str, sid: str) -> TriviaPlayer:
     socket=sid
   )
 
-def getRandomQuestions(categories: list[CategoryData], num_rounds: int, question_dao: QuestionsDAO) -> list[QuestionData]:
+def getRandomQuestions(categories: List[CategoryData], num_rounds: int, question_dao: QuestionsDAO) -> List[QuestionData]:
   cat_ids = [c.id for c in categories]
   question_data = question_dao.getQuestionsFromCats(cat_ids=cat_ids)
   num_questions = len(question_data)
@@ -28,7 +28,7 @@ def getRandomQuestions(categories: list[CategoryData], num_rounds: int, question
     )
   return [question_data[i] for i in rand_ints]
 
-def newGame(categories: list[str], question_dao: QuestionsDAO, num_rounds: int = 10) -> TriviaGame:
+def newGame(categories: List[str], question_dao: QuestionsDAO, num_rounds: int = 10) -> TriviaGame:
   questions = getRandomQuestions(categories=categories, num_rounds=num_rounds, question_dao=question_dao)
   # TODO: Shuffle choices
   return TriviaGame(
@@ -39,10 +39,10 @@ def newGame(categories: list[str], question_dao: QuestionsDAO, num_rounds: int =
 
 # TODO: QUESTION: Is there an inheritance for functions so I don't have to have the same parameters each time
 
-def addCategories(game: TriviaGame, categories: list[CategoryData]):
+def addCategories(game: TriviaGame, categories: List[CategoryData]):
   game.categories += categories
 
-# def addQuestions(game: TriviaGame, questions: list[QuestionData]):
+# def addQuestions(game: TriviaGame, questions: List[QuestionData]):
 #   game.questions += questions
 
 def addPlayer(game: TriviaGame, player_id: str):
@@ -147,7 +147,7 @@ def genWinners(game: TriviaGame):
   game.game_winners = [id for id in scores if scores[id] == winning_score]
   print(game.game_winners)
 
-def getWinnerNames(game: TriviaGame, player_data: Dict[str, TriviaPlayer]) -> list[str]:
+def getWinnerNames(game: TriviaGame, player_data: Dict[str, TriviaPlayer]) -> List[str]:
   if game.game_winners == None:
     return None
   else:
@@ -156,7 +156,7 @@ def getWinnerNames(game: TriviaGame, player_data: Dict[str, TriviaPlayer]) -> li
       winner_names.append(player_data[player_id].name)
     return winner_names
 
-def getResultsWithNames(game: TriviaGame, player_data: Dict[str, TriviaPlayer]) -> tuple[Dict[str, str], List[str]]:
+def getResultsWithNames(game: TriviaGame, player_data: Dict[str, TriviaPlayer]) -> Tuple[Dict[str, str], List[str]]:
   scores = game.scores
   named_scores = {player_data[player_id].name:scores[player_id] for player_id in scores}
   if game.game_winners == None:
@@ -172,7 +172,7 @@ def startGame(game: TriviaGame):
   else:
     return False
 
-def nextRound(game_id: str, player_ids: list[str], transaction) -> TriviaGame:
+def nextRound(game_id: str, player_ids: List[str], transaction) -> TriviaGame:
   def resetGameTime(game: TriviaGame) -> TriviaGame:
     game.winning_time = None
     if game.question_index < len(game.questions): # Only add if there are remaining questions

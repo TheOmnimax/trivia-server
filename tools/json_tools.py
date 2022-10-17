@@ -2,6 +2,7 @@ import logging
 
 from pydantic import BaseModel
 from google.cloud import datastore
+from typing import List
 
 def _isBuiltInType(data):
   data_type = type(data)
@@ -11,7 +12,7 @@ def _isBuiltInType(data):
     return False
 
 class JsonConverter:
-  def __init__(self, pre_accepted: list[type] = [], skipped_keys: list = []) -> None:
+  def __init__(self, pre_accepted: List[type] = [], skipped_keys: list = []) -> None:
     self._accepted_tags = dict() # Will store all of the types used, so the dicts can be converted back to those types
     for t in pre_accepted:
       self._accepted_tags[t.__name__] = t
@@ -22,7 +23,7 @@ class JsonConverter:
     type_str = class_type.__name__
     self._accepted_tags[type_str] = class_type
 
-  def addAcceptedTags(self, class_types: list[type]):
+  def addAcceptedTags(self, class_types: List[type]):
     for class_type in class_types:
       type_str = class_type.__name__
       self._accepted_tags[type_str] = class_type
