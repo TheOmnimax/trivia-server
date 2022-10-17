@@ -3,7 +3,7 @@ logging.getLogger().addHandler(logging.StreamHandler()) # For testing
 
 from os import environ
 
-environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'C:\\Users\\maxshaberman\\Documents\\Coding\\Keys\\max-trivia-5a46a7a8eb28.json' # TESTING ONLY
+# environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'C:\\Users\\maxshaberman\\Documents\\Coding\\Keys\\max-trivia-5a46a7a8eb28.json' # TESTING ONLY
 
 import google.cloud.logging
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,9 +29,6 @@ client.setup_logging()
 app = FastAPI()
 
 app.mount('/', socket_app)
-
-
-
 
 app.add_middleware(
     CORSMiddleware,

@@ -8,4 +8,5 @@ google-cloud-storage==2.1.0
 google-cloud-logging==3.0.0
 google-cloud-profiler
 gunicorn
+socketio
 uvicorn==0.17.6
