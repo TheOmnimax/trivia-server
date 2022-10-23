@@ -17,7 +17,7 @@ from fastapi.responses import PlainTextResponse
 from fastapi import WebSocket, WebSocketDisconnect
 import socketio
 from dependencies.sio import sio, socket_manager
-
+from typing import List
 
 # async def webSocketCommands(id: str, websocket: WebSocket, manager: websocket.ConnectionManager):
 #   try:

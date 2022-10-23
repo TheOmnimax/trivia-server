@@ -102,7 +102,7 @@ class GcloudMemoryStorage:
       return_data = new_val_func(*data_list)
       for e in range (len(entities)):
         entity = entities[e]
-        update_data = self._json_converter.baseModelToJson(data_List[e])
+        update_data = self._json_converter.baseModelToJson(data_list[e])
         entity.update(update_data)
       self._client.put_multi(entities)
     return return_data
