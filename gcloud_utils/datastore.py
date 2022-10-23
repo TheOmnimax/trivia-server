@@ -1,22 +1,12 @@
 """For communicating with Gcloud datastore"""
 
 from genericpath import exists
-from html import entities
-import json
 from typing import List, Tuple
 from google.cloud import datastore
-import logging
-import json
 
-from grpc import server
 from tools.json_tools import JsonConverter
 from tools.randomization import genCode
 import threading
-from fastapi import HTTPException
-
-from os import environ
-
-# environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'C:\\Users\\maxshaberman\\Documents\\Coding\\Keys\\max-trivia-5a46a7a8eb28.json' # TESTING ONLY
 
 class GcloudMemoryStorage:
   def __init__(self, client: datastore.Client, code_size: int = 6, pre_accepted: List[type] = [], skipped_keys: List[str] = []):

@@ -1,21 +1,14 @@
-from html import entities
 from google.cloud import datastore
-from tools.randomization import genCode
 
 from .question_dao import QuestionsDAO
 from .shared_functions import DatastoreDAO
 from domains.trivia.model import CategoryData
 from typing import List
-# TODO: QUESTION: Why does the above work, but not the one below?
-# from .shared_functions import *
 
 class CategoryDAO(DatastoreDAO):
   def __init__(self, client: datastore.Client):
     self._client = client
 
-  # def _genKey(self):
-  #   return super()._genKey('category', 16)
-  
   def _genUniqueKey(self):
     return super()._genUniqueKey('category', 16)
   

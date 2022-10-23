@@ -1,8 +1,5 @@
-from typing import Optional
 from google.cloud import datastore
-from pydantic import BaseModel
 from tools.randomization import genCode
-
 
 class DatastoreDAO:
   def __init__(self, client: datastore.Client):

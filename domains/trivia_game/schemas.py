@@ -1,7 +1,6 @@
 from pydantic import BaseModel
 from typing import Dict, List, Optional
 from domains.trivia_game.model import CategoryData
-from domains.trivia_game.model import RoundData
 
 class CategorySchema(CategoryData):
   pass

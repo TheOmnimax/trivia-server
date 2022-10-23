@@ -7,13 +7,10 @@ from os import environ
 
 import google.cloud.logging
 from fastapi.middleware.cors import CORSMiddleware
-from google.cloud import datastore
 
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI
 from routers.manage import category, question
 from routers.play import creation, playing
-from gcloud_utils.datastore import GcloudMemoryStorage
-from dependencies import dependencies
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import PlainTextResponse
 
@@ -48,9 +45,6 @@ async def validation_exception_handler(request, exc):
 #   getHeapSize('Middleware')
 #   return await call_next(request)
 
-
-app.include_router(creation.router)
-app.include_router(playing.router)
 app.include_router(category.router)
 app.include_router(question.router)
 

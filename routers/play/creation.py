@@ -1,41 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException
-
-from daos.utils import getClient
-from dependencies import websocket
-from dependencies.dependencies import getMemoryStorage
-from dependencies.model import WebSocketHelpers
 from domains.general.schemas import ConnectionSchema
-from domains.trivia_game.model import TriviaGame, TriviaPlayer # TODO: QUESTION: Should this be in the main file, or in daos.utils?
-from gcloud_utils.datastore import GcloudMemoryStorage
-from domains.trivia_game.schemas import CreateGame, CreateRoomResponse, JoinGameResponse, JoinGameSchema, NewGameSchema, CreateRoomSchema
+from domains.trivia_game.model import TriviaGame
+from domains.trivia_game.schemas import CreateGame, CreateRoomResponse, JoinGameResponse, JoinGameSchema, CreateRoomSchema
 from domains.trivia_game import services as tg_services
-from domains.game.model import Game, GameRoom
+from domains.game.model import GameRoom
 from domains.game import services as game_services
 import dependencies
-from fastapi.exceptions import RequestValidationError
-from fastapi.responses import PlainTextResponse
-from fastapi import WebSocket, WebSocketDisconnect
-import socketio
-from dependencies.sio import sio, socket_manager
+from dependencies.sio import sio
 from typing import List
-
-# async def webSocketCommands(id: str, websocket: WebSocket, manager: websocket.ConnectionManager):
-#   try:
-#     while True:
-#       data = await websocket.receive_json()
-#       if ''
-#   except WebSocketDisconnect:
-#     manager.disconnect(id)
-#   pass
-
-
-
-router = APIRouter()
 
 @sio.on('connect')
 async def connect(sid, data):
   await sio.emit('connect', dict(ConnectionSchema(sid=sid)))
-
 
 @sio.on('create-room')
 async def createRoom(sid, data):

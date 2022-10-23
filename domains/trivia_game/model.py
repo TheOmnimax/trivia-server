@@ -7,16 +7,6 @@ class RoundData(BaseModel):
   winner: str
   time: Optional[int]
 
-
-# NEW?
-# class RoundData(BaseModel):
-#   complete: List[str]
-#   winners: List[Player]
-#   winner_ids: List[str]
-#   question: QuestionData
-#   correct: int
-#   round_times: Dict[str, int]
-
 class TriviaPlayer(Player):
   completed_round: bool = False
   time_used: int = 0

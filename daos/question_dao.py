@@ -1,19 +1,13 @@
 from google.cloud import datastore
-from tools.randomization import genCode
 
 from .shared_functions import DatastoreDAO
-# from .category_dao import CategoryDAO
-from . import category_dao
 from domains.trivia.model import QuestionData
-from domains.trivia.schemas import NewQuestionSchema, QuestionSchema, QuestionUpdate
+from domains.trivia.schemas import NewQuestionSchema, QuestionUpdate
 from typing import List
 
 class QuestionsDAO(DatastoreDAO):
   def __init__(self, client: datastore.Client):
     self._client = client
-  
-  # def _genKey(self):
-  #   return super()._genKey('question', 16)
   
   def _genUniqueKey(self):
     return super()._genUniqueKey('question', 16)

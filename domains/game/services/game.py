@@ -1,5 +1,4 @@
 from domains.game.model import Game, Player, GameRoom
-from domains.game.services import player as player_services
 from tools.randomization import genUniqueCode
 from typing import List
 
@@ -8,7 +7,6 @@ def createGameRoom(host_id: str):
     host_id=host_id,
     members=[host_id]
   )
-
 
 def addGame(game_room: GameRoom, game_id: str):
   game_room.game_id = game_id

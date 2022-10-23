@@ -1,23 +1,16 @@
-import time
-from typing import Dict, List, Optional, Tuple
-from fastapi import APIRouter, Depends, HTTPException, WebSocket
-from dependencies.model import WebSocketHelpers
-from domains.game.model import Game, GameRoom
+from typing import Dict, List, Tuple
+from domains.game.model import GameRoom
 from domains.trivia_game.services import trivia_game
 from domains.trivia_game.services.trivia_game import getPlayerNames
 from domains.trivia_game.model import TriviaGame, TriviaPlayer
-from domains.trivia_game.schemas import AdminResponse, AdminSchema, AnswerQuestion, AnswerResponse, GameResponse, JoinGameSchema, NextRoundSchema, PlayerCheckinResponse, PlayerSchema, ResultsResponse, RoomSchema, RoundComplete, StartGame
-from tools.randomization import genCode
+from domains.trivia_game.schemas import AdminSchema, AnswerQuestion, AnswerResponse, GameResponse,  NextRoundSchema, PlayerSchema, ResultsResponse, RoomSchema, RoundComplete, StartGame
 from gcloud_utils.datastore import GcloudMemoryStorage
 from domains.trivia_game import services as tg_services
-from threading import Timer
 from asyncio import sleep
 
 import dependencies
 
-from dependencies.sio import sio, socket_manager
-
-router = APIRouter()
+from dependencies.sio import sio
 
 # async def _sendSidsMulti(game: Game, mem_store: GcloudMemoryStorage, event: str, data):
 #   sids = _getSids(game, mem_store)

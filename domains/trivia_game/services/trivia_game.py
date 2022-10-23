@@ -1,13 +1,9 @@
 from fastapi import HTTPException
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 from domains.trivia_game.model import TriviaGame, RoundData, TriviaPlayer
-from domains.game.model import Player
 from domains.trivia.model import QuestionData, CategoryData
-from daos.category_dao import CategoryDAO
 from daos.question_dao import QuestionsDAO
 import random
-from tools.randomization import genUniqueCode
-from threading import Timer
 
 class TriviaGameError(Exception):
   pass

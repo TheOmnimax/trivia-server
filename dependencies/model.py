@@ -1,6 +1,4 @@
-from dataclasses import dataclass
 from pydantic import BaseModel
-from google.cloud import datastore
 from dependencies.websocket import ConnectionManager
 from gcloud_utils.datastore import GcloudMemoryStorage
 from daos import QuestionsDAO, CategoryDAO
