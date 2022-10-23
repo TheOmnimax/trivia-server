@@ -4,9 +4,10 @@ google
 google-cloud-datastore
 google-api-python-client
 google-cloud
-google-cloud-storage==2.1.0
+google-cloud-storage==2.0.0
 google-cloud-logging==3.0.0
 google-cloud-profiler
 gunicorn
-socketio
-uvicorn==0.17.6
+python-socketio==5.7.1
+uvicorn==0.17.0
+websockets==10.2
