@@ -10,7 +10,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from fastapi import FastAPI
 from routers.manage import category, question
-from routers.play import creation, playing
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import PlainTextResponse
 
