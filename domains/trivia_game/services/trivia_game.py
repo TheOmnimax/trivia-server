@@ -114,13 +114,13 @@ def resetPlayer(player: TriviaPlayer):
 def completeRound(game: TriviaGame):
   if game.round_complete:
     winner_id = game.round_winner
+    game.round_winner = None
     game.round_complete = False
     if len(game.round_winners) <= game.question_index:
       game.round_winners.append(winner_id)
       # game.question_index += 1
     game.complete_players = set()
     if game.question_index + 1 >= len(game.questions): # Game is complete
-      print('Game is complete')
       game.game_complete = True
       genWinners(game)
     pass
@@ -137,8 +137,6 @@ def genWinners(game: TriviaGame):
     if id != None:
       scores[id] += 1
   game.scores = scores
-  print('Scores:')
-  print(game.scores)
   winning_score = max([scores[id] for id in scores])
   game.game_winners = [id for id in scores if scores[id] == winning_score]
   print(game.game_winners)
@@ -154,6 +152,8 @@ def getWinnerNames(game: TriviaGame, player_data: Dict[str, TriviaPlayer]) -> Li
 
 def getResultsWithNames(game: TriviaGame, player_data: Dict[str, TriviaPlayer]) -> Tuple[Dict[str, str], List[str]]:
   scores = game.scores
+  print('Scores:')
+  print(scores)
   named_scores = {player_data[player_id].name:scores[player_id] for player_id in scores}
   if game.game_winners == None:
     winner_names = []
