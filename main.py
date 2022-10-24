@@ -41,7 +41,6 @@ async def validation_exception_handler(request, exc):
 # @app.middleware('http')
 # async def mw(request: Request, call_next):
 #   logging.info('In middleware')
-#   getHeapSize('Middleware')
 #   return await call_next(request)
 
 app.include_router(category.router)
