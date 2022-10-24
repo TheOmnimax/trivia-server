@@ -39,7 +39,8 @@ class JoinGameSchema(BaseModel):
   player_name: str
 
 class JoinGameResponse(BaseModel):
-  successful: bool
+  successful: bool = True
+  message: str = "Successful"
   player_id: str
 
 class GameResponse(BaseModel):

@@ -8,6 +8,8 @@ import dependencies
 from dependencies.sio import sio
 from typing import List
 
+from gcloud_utils.datastore import EntityNotExists
+
 @sio.on('connect')
 async def connect(sid, data):
   await sio.emit('connect', dict(ConnectionSchema(sid=sid)))
@@ -71,10 +73,10 @@ async def newGame(sid, data):
 
 
 @sio.on('add-player')
-async def newGame(sid, data):
+async def addPlayer(sid, data):
   data = JoinGameSchema(**data)
   mem_store = dependencies.getMemoryStorage()
-  new_player = tg_services.createTriviaPlayer(name=data.player_name)
+  new_player = tg_services.createTriviaPlayer(name=data.player_name, sid=sid)
   player_id = mem_store.create(kind='player', data=new_player)
 
   def addMember(game_room: GameRoom):
@@ -85,11 +87,14 @@ async def newGame(sid, data):
     tg_services.addPlayer(game, player_id)
     return True
 
-  game_id = mem_store.transaction(kind='game_room', id=data.room_code, new_val_func=addMember)
+  try:
+    game_id = mem_store.transaction(kind='game_room', id=data.room_code, new_val_func=addMember)
+  except EntityNotExists:
+    response = JoinGameResponse(successful=False, message='Game does not exist', player_id='')
+    await sio.emit('add-player', data=dict(response))
+    return
   successful = mem_store.transaction(kind='trivia_game', id=game_id, new_val_func=addPlayer)
-  if game_id == None:
-    JoinGameResponse(successful=False, player_id=player_id)
-  else:
-    response = JoinGameResponse(successful=True, player_id='')
-  await sio.emit('create-room', data=dict(response))
+
+  response = JoinGameResponse(player_id=player_id)
+  await sio.emit('add-player', data=dict(response))
 

@@ -8,6 +8,9 @@ from tools.json_tools import JsonConverter
 from tools.randomization import genCode
 import threading
 
+class EntityNotExists(Exception):
+  pass
+
 class GcloudMemoryStorage:
   def __init__(self, client: datastore.Client, code_size: int = 6, pre_accepted: List[type] = [], skipped_keys: List[str] = []):
     self._client = client
@@ -18,6 +21,7 @@ class GcloudMemoryStorage:
   def _getEntityData(self, key: datastore.Key, predicate = None):
     entity = self._client.get(key)
     if (entity == None):
+      raise EntityNotExists
       return None
     else:
       server_data = self._json_converter.jsonToBaseModel(entity)
