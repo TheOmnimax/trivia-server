@@ -3,19 +3,18 @@ logging.getLogger().addHandler(logging.StreamHandler()) # For testing
 
 from os import environ
 
-# environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'C:\\Users\\maxshaberman\\Documents\\Coding\\Keys\\max-trivia-5a46a7a8eb28.json' # TESTING ONLY
-
 import google.cloud.logging
 from fastapi.middleware.cors import CORSMiddleware
-from google.cloud import datastore
 
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI
 from routers.manage import category, question
-from routers.play import creation, playing
-from gcloud_utils.datastore import GcloudMemoryStorage
-from dependencies import dependencies
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import PlainTextResponse
+
+from constants.constants import origins
+from dependencies.sio import socket_app
+from routers.play.creation import *
+from routers.play.playing import *
 
 client = google.cloud.logging.Client()
 client.setup_logging()
@@ -23,18 +22,7 @@ client.setup_logging()
 # TODO: Set categories as labels
 app = FastAPI()
 
-router = APIRouter()
-
-origins = [
-    'http://localhost',
-    'http://localhost:8080',
-    'http://localhost:51377',
-    'https://localhost:51377',
-    'https://max-trivia.web.app',
-    'http://max-trivia.web.app',
-    'https://trivia-question-manager.web.app',
-    'http://trivia-question-manager.web.app'
-]
+app.mount('/', socket_app)
 
 app.add_middleware(
     CORSMiddleware,
@@ -51,12 +39,8 @@ async def validation_exception_handler(request, exc):
 # @app.middleware('http')
 # async def mw(request: Request, call_next):
 #   logging.info('In middleware')
-#   getHeapSize('Middleware')
 #   return await call_next(request)
 
-
-app.include_router(creation.router)
-app.include_router(playing.router)
 app.include_router(category.router)
 app.include_router(question.router)
 

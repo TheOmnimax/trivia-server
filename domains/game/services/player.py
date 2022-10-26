@@ -1,7 +1,8 @@
 from domains.game.model import Player
 from tools.randomization import genUniqueCode
+from typing import List
 
-def createPlayer(name: str, base_score: int = 0, code_length: int = 6, existing_ids: list[str] = []) -> Player:
+def createPlayer(name: str, base_score: int = 0, code_length: int = 6, existing_ids: List[str] = []) -> Player:
   code = genUniqueCode(code_length, existing=existing_ids)
   return Player(
     id=code,

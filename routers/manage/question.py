@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from fastapi import APIRouter, Depends
 from daos import QuestionsDAO
 from domains.trivia.schemas import QuestionUpdate, NewQuestionSchema, QuestionSchema
@@ -8,7 +8,7 @@ from daos.utils import getClient
 router = APIRouter()
 
 class GetQuestions(BaseModel):
-  categories: Optional[list[str]]
+  categories: Optional[List[str]]
 
 class DeleteQuestion(BaseModel):
   id: str

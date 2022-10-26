@@ -1,12 +1,12 @@
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel
 
 class NewQuestionData(BaseModel):
   label: str
-  categories: list[str]
-  choices: list[str]
+  categories: List[str]
+  choices: List[str]
   shuffle: bool
-  shuffle_skip: Optional[list[int]]
+  shuffle_skip: Optional[List[int]]
   correct: int
 
 class QuestionData(NewQuestionData):

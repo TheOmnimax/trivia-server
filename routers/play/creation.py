@@ -1,50 +1,54 @@
-from fastapi import APIRouter, Depends, HTTPException
-
-from daos.utils import getClient
-from domains.trivia_game.model import TriviaGame, TriviaPlayer # TODO: QUESTION: Should this be in the main file, or in daos.utils?
-from gcloud_utils.datastore import GcloudMemoryStorage
-from domains.trivia_game.schemas import CreateGame, CreateRoomResponse, JoinGameResponse, JoinGameSchema, NewGameSchema, CreateRoomSchema
+from domains.general.schemas import ConnectionSchema
+from domains.trivia_game.model import TriviaGame
+from domains.trivia_game.schemas import CreateGame, CreateRoomResponse, JoinGameResponse, JoinGameSchema, CreateRoomSchema
 from domains.trivia_game import services as tg_services
-from domains.game.model import Game, GameRoom
+from domains.game.model import GameRoom
 from domains.game import services as game_services
 import dependencies
-from fastapi.exceptions import RequestValidationError
-from fastapi.responses import PlainTextResponse
+from dependencies.sio import sio
+from typing import List
 
-router = APIRouter()
+from gcloud_utils.datastore import EntityNotExists
 
-@router.post('/create-room')
-async def createRoom(data: CreateRoomSchema, mem_store: GcloudMemoryStorage = Depends(dependencies.getMemoryStorage)): # Create a room with a single player, the host
-  # mem_store = ar.memory_storage
+@sio.on('connect')
+async def connect(sid, data):
+  await sio.emit('connect', dict(ConnectionSchema(sid=sid)))
 
-  host_player = tg_services.createTriviaPlayer(name=data.host_name)
+@sio.on('create-room')
+async def createRoom(sid, data):
+  data = CreateRoomSchema(**data)
+  mem_store = dependencies.getMemoryStorage()
+  host_player = tg_services.createTriviaPlayer(name=data.host_name, sid=sid)
   host_id = mem_store.create(kind='player', data=host_player)
   game_room = game_services.createGameRoom(host_id=host_id)
   room_code = mem_store.create(kind='game_room', data=game_room)
-  return  CreateRoomResponse(
+  await sio.emit('create-room', data=dict(CreateRoomResponse(
     room_code=room_code,
     host_id=host_id
-  )
+  )))
 
-@router.post('/new-game')
-async def newGame(data: CreateGame, ar: dependencies.AllRetrieval = Depends(dependencies.allRetrieval)):
+@sio.on('new-game')
+async def newGame(sid, data):
+  data = CreateGame(**data)
   # PREPARATION
   room_code = data.room_code
-  mem_store = ar.memory_storage
-  question_dao = ar.question_dao
-  category_dao = ar.category_dao
+  mem_store = dependencies.getMemoryStorage()
+  deps = dependencies.allRetrieval()
+  mem_store = deps.memory_storage
+  question_dao = deps.question_dao
+  category_dao = deps.category_dao
   categories = category_dao.getCatsFromIds(ids=data.categories)
 
   # CREATE NEW GAME
   new_game = tg_services.newGame( # Create the new game
     categories=categories,
     question_dao=question_dao,
-    num_rounds=5 # TODO: Update this to be customizable
+    num_rounds=data.num_rounds
     )
   game_id = mem_store.create('trivia_game', new_game) # Add the new game to the server
 
   # ADD TO GAME ROOM
-  def addGameToGameRoom(game_room: GameRoom) -> list[str]:
+  def addGameToGameRoom(game_room: GameRoom) -> List[str]:
     game_services.addGame(game_room=game_room, game_id=game_id)
     return game_room.members
   
@@ -65,12 +69,14 @@ async def newGame(data: CreateGame, ar: dependencies.AllRetrieval = Depends(depe
     kind='trivia_game',
     new_val_func=addPlayers
     )
+  await sio.emit('new-game', data={'successful': True})
 
-  return {'successful': True}
 
-@router.post('/add-player')
-async def addPlayer(data: JoinGameSchema, mem_store: GcloudMemoryStorage = Depends(dependencies.getMemoryStorage)):
-  new_player = tg_services.createTriviaPlayer(name=data.player_name)
+@sio.on('add-player')
+async def addPlayer(sid, data):
+  data = JoinGameSchema(**data)
+  mem_store = dependencies.getMemoryStorage()
+  new_player = tg_services.createTriviaPlayer(name=data.player_name, sid=sid)
   player_id = mem_store.create(kind='player', data=new_player)
 
   def addMember(game_room: GameRoom):
@@ -81,9 +87,14 @@ async def addPlayer(data: JoinGameSchema, mem_store: GcloudMemoryStorage = Depen
     tg_services.addPlayer(game, player_id)
     return True
 
-  game_id = mem_store.transaction(kind='game_room', id=data.room_code, new_val_func=addMember)
+  try:
+    game_id = mem_store.transaction(kind='game_room', id=data.room_code, new_val_func=addMember)
+  except EntityNotExists:
+    response = JoinGameResponse(successful=False, message='Game does not exist', player_id='')
+    await sio.emit('add-player', data=dict(response))
+    return
   successful = mem_store.transaction(kind='trivia_game', id=game_id, new_val_func=addPlayer)
-  if game_id == None:
-    raise HTTPException(status_code=404, detail='Room code not found')
-  return JoinGameResponse(player_id=player_id)
+
+  response = JoinGameResponse(player_id=player_id)
+  await sio.emit('add-player', data=dict(response))
 

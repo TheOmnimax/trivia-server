@@ -1,17 +1,17 @@
 from domains.game.model import Game, Player, GameRoom
-from domains.game.services import player as player_services
 from tools.randomization import genUniqueCode
+from typing import List
+
 def createGameRoom(host_id: str):
   return GameRoom(
     host_id=host_id,
     members=[host_id]
   )
 
-
 def addGame(game_room: GameRoom, game_id: str):
   game_room.game_id = game_id
 
-def addPlayersToGame(game: Game, player_ids: list[str]):
+def addPlayersToGame(game: Game, player_ids: List[str]):
   game.players = player_ids
 
 def createMember(game_room: GameRoom, name: str) -> str:

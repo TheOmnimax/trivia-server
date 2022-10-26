@@ -1,5 +1,4 @@
-import imp
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel
 
 from .model import NewQuestionData, QuestionData
@@ -13,8 +12,8 @@ class QuestionSchema(QuestionData):
 class QuestionUpdate(BaseModel):
   id: str
   label: Optional[str]
-  categories: Optional[list[str]]
-  choices: Optional[list[str]]
+  categories: Optional[List[str]]
+  choices: Optional[List[str]]
   shuffle: Optional[bool]
-  shuffle_skip: Optional[list[int]]
+  shuffle_skip: Optional[List[int]]
   correct: Optional[int]

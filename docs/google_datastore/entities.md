@@ -6,7 +6,7 @@
 
 **host_id** [str]: Player ID of the host
 
-**members** [list[str]]: Player IDs who are a member of this game room.
+**members** [List[str]]: Player IDs who are a member of this game room.
 
 **game** [str]: ID of the game being played
 

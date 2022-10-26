@@ -1,7 +1,6 @@
 from pydantic import BaseModel
 from typing import Dict, List, Optional
 from domains.trivia_game.model import CategoryData
-from domains.trivia_game.model import RoundData
 
 class CategorySchema(CategoryData):
   pass
@@ -26,7 +25,7 @@ class CreateRoomResponse(BaseModel):
 class CreateGame(BaseModel):
   room_code: str
   host_id: str
-  categories: list[str]
+  categories: List[str]
   num_rounds: int = 10
 
 class NewGameSchema(BaseModel):
@@ -40,7 +39,16 @@ class JoinGameSchema(BaseModel):
   player_name: str
 
 class JoinGameResponse(BaseModel):
+  successful: bool = True
+  message: str = "Successful"
   player_id: str
+
+class GameResponse(BaseModel):
+  player_names: List[str]
+
+class StartGame(BaseModel):
+  allowed: bool
+  started: bool
 
 class AdminResponse(BaseModel):
   successful: bool
@@ -49,28 +57,36 @@ class AdminResponse(BaseModel):
 class GetQuestionSchema(RoomSchema):
   room_code: str
 
-class PlayerCheckinSchema(PlayerSchema):
-  time: int
-  ready: bool = True
-
-class AnswerQuestion(PlayerCheckinSchema):
+class AnswerQuestion(PlayerSchema):
   answer: int # index of the question selected
 
 class AnswerResponse(BaseModel):
   player_correct: bool
+
+
+class RoundComplete(BaseModel):
+  round_complete: bool
+  is_winner: bool
+  winner_name: str
+  correct: int
   
+
 class PlayerCheckinResponse(BaseModel):
   player_names: List[str]
   scores: Dict[str, int]
   question: str
-  choices: list[str]
+  choices: List[str]
   correct: Optional[int]
   player_complete: bool = False
   round_complete: bool = False
   game_complete: bool = False
-  winners: Optional[list[str]]
+  winners: Optional[List[str]]
   is_winner: Optional[bool]
 
+class NextRoundSchema(BaseModel):
+  question: str
+  choices: List[str]
+
 class ResultsResponse(BaseModel):
-  scores: dict[str, int]
-  winners: list[str]
+  scores: Dict[str, int]
+  winners: List[str]

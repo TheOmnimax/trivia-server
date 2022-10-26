@@ -1,52 +1,77 @@
 """For communicating with Gcloud datastore"""
 
 from genericpath import exists
-from html import entities
-import json
+from typing import List, Tuple
 from google.cloud import datastore
-import logging
-import json
 
-from grpc import server
 from tools.json_tools import JsonConverter
 from tools.randomization import genCode
 import threading
-from fastapi import HTTPException
 
-from os import environ
-
-# environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'C:\\Users\\maxshaberman\\Documents\\Coding\\Keys\\max-trivia-5a46a7a8eb28.json' # TESTING ONLY
+class EntityNotExists(Exception):
+  pass
 
 class GcloudMemoryStorage:
-  def __init__(self, client: datastore.Client, code_size: int = 6, pre_accepted: list[type] = [], skipped_keys: list[str] = []):
+  def __init__(self, client: datastore.Client, code_size: int = 6, pre_accepted: List[type] = [], skipped_keys: List[str] = []):
     self._client = client
     self._code_size = code_size
     self._lock = threading.Lock()
     self._json_converter = JsonConverter(pre_accepted=pre_accepted, skipped_keys=skipped_keys)
+  
+  def _getEntityData(self, key: datastore.Key, predicate = None):
+    entity = self._client.get(key)
+    if (entity == None):
+      raise EntityNotExists
+      return None
+    else:
+      server_data = self._json_converter.jsonToBaseModel(entity)
+
+      if (predicate != None) and (not predicate(server_data)):
+        return None
+      return server_data
+    pass
+
+  def _updateEntity(self, key: datastore.Key, new_data):
+    entity = datastore.Entity(key) # TODO: Check if entity has to be retrieved each time
+    json_data = self._json_converter.baseModelToJson(new_data)
+    entity.update(json_data)
+    self._client.put(entity)
+
   
   def transaction(self, kind: str, id: str, new_val_func, predicate = None):
     if (id == '' or id == None):
       return None
     key = self._client.key(kind, id)
     with self._client.transaction():
-      entity = self._client.get(key)
-      if (entity == None):
-        return None
-      else:
-        server_data = self._json_converter.jsonToBaseModel(entity)
-
-        if (predicate != None) and (not predicate(server_data)):
-          return None
-
-        data = new_val_func(server_data)
-        entity = datastore.Entity(key)
-        new_data = self._json_converter.baseModelToJson(server_data)
-        entity.update(new_data)
-        self._client.put(entity)
-        return data
+      server_data = self._getEntityData(key, predicate)
+      return_data = new_val_func(server_data)
+      self._updateEntity(key, server_data)
+      return return_data
+  
+  async def asyncTransaction(self, kind: str, id: str, new_val_func, predicate = None):
+    if (id == '' or id == None):
+      return None
+    key = self._client.key(kind, id)
+    with self._client.transaction():
+      server_data = self._getEntityData(key, predicate)
+      data = await new_val_func(server_data)
+      self._updateEntity(key, server_data)
+      return data
 
   def transactionMulti(self,
-    pairs: tuple[str, str],
+    kind: str,
+    ids: List[str],
+    new_val_func,
+    predicate = None,
+    ):
+    all_data = dict
+    for id in ids:
+      all_data[id] = self.transaction(kind, id, new_val_func, predicate)
+    return all_data
+
+
+  def transactionMultiKind(self,
+    pairs: Tuple[str, str],
     new_val_func
     ):
     keys = [self._client.key(*p) for p in pairs]
@@ -124,7 +149,7 @@ class GcloudMemoryStorage:
       else:
         return data_type.parse_obj(data) 
   
-  def getMulti(self, kind: str, ids: list[str], data_type = None) -> dict:
+  def getMulti(self, kind: str, ids: List[str], data_type = None) -> dict:
     keys = [self._client.key(kind, id) for id in ids]
     entities = self._client.get_multi(keys)
     if data_type == None:
@@ -132,7 +157,7 @@ class GcloudMemoryStorage:
     else:
       return {e.key.name:data_type.parse_obj(self._json_converter.jsonToBaseModel(dict(e))) for e in entities}
   
-  def query(self, kind: str, filters: list[tuple], data_type = None) -> list:
+  def query(self, kind: str, filters: List[Tuple], data_type = None) -> list:
     query = self._client.query(kind=kind)
     for filter in filters:
       query.add_filter(*filter)
