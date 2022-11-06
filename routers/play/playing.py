@@ -17,7 +17,7 @@ from dependencies.sio import sio
 #   return await socket_manager.sendDataMulti(ids=sids, event=event, data=data)
 
 def _getGameId(room_code: str, mem_store: GcloudMemoryStorage) -> str:
-  game_room = mem_store.get(kind='game_room', id=room_code)
+  game_room = mem_store.get(kind='game_room', id=room_code, data_type=GameRoom)
   game_id = game_room.game_id
   return game_id
 
@@ -46,6 +46,7 @@ async def _nextRound(game: TriviaGame, player_data: Dict[str, TriviaPlayer]):
     sid = player.socket
     await sio.emit('next-round',
       dict(NextRoundSchema(
+        round_num=game.question_index,
         question=question.label,
         choices=question.choices
         )),
@@ -117,6 +118,9 @@ async def answerQuestion(sid, data):
   current_question = tg_services.getQuestion(game)
   correct_answer = current_question.correct
 
+  if data.round != game.question_index: # Answer for a different round. Probably answered at same time as winner of last round, but game has since moved on
+    return
+
   def pCorrect(game: TriviaGame, player: TriviaPlayer) -> bool:
     tg_services.makePlayerCorrect(game=game,
       player=player,
@@ -175,15 +179,12 @@ async def answerQuestion(sid, data):
         )),
         to=sid
         )
-      print('Emitted to', sid)
     
-    print('Sleeping')
-    await sleep(1)
-    print('Done sleeping')
-    print(game.game_complete)
+    game_id, game = _getGame(data.room_code, mem_store)
     if game.game_complete:
       named_scores, winner_names = tg_services.getResultsWithNames(game=game, player_data=player_data)
       sids = _getSocketIds(player_data=player_data)
+      await sleep(1)
       for sid in sids:
         await sio.emit('game-complete',
         dict(ResultsResponse(
@@ -193,6 +194,10 @@ async def answerQuestion(sid, data):
         to=sid)
     else:
       game = tg_services.nextRound(game_id=game_id, player_ids=player_data, transaction=mem_store.transaction)
+      
+      print('Sleeping')
+      await sleep(1)
+      print('Done sleeping')
       await _nextRound(game, player_data)
 
 @sio.on('get-results')

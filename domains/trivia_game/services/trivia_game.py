@@ -122,6 +122,7 @@ def completeRound(game: TriviaGame):
     game.complete_players = set()
     if game.question_index + 1 >= len(game.questions): # Game is complete
       game.game_complete = True
+      game.question_index = -1 # This is to make sure no one else can answer questions
       genWinners(game)
     pass
 
