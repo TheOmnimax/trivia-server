@@ -133,13 +133,10 @@ async def answerQuestion(sid, data):
       )
     return game.round_complete
 
-  def completeRound(game: TriviaGame) -> TriviaGame:
+  def completeRound(game: TriviaGame) -> Tuple[TriviaGame, str]:
+    round_winner = game.round_winner
     trivia_game.completeRound(game=game)
-    return game
-  
-  def resetPlayer(player: TriviaPlayer) -> TriviaPlayer:
-    trivia_game.resetPlayer(player)
-    return player
+    return (game, round_winner)
 
   if data.answer == correct_answer:
     answer_func = pCorrect
@@ -157,11 +154,9 @@ async def answerQuestion(sid, data):
   )
   
   if round_complete:
-    # TODO: Find why question data does not become QuestionData
-    game = mem_store.transaction(kind='trivia_game', id=game_id, new_val_func=completeRound)
+    game, round_winner = mem_store.transaction(kind='trivia_game', id=game_id, new_val_func=completeRound)
     player_data = _getPlayerDict(player_ids=game.players, mem_store=mem_store)
 
-    round_winner = game.round_winner
     if round_winner != None:
       winner_name = player_data[round_winner].name
     else:
@@ -171,11 +166,10 @@ async def answerQuestion(sid, data):
     for player_id in player_data:
       player = player_data[player_id]
       sid = player.socket
-      print('Emitting round complete')
       await sio.emit('round-complete',
         dict(RoundComplete(
           round_complete=True,
-          is_winner=player_id==game.round_winner,
+          is_winner=player_id==round_winner,
           winner_name=winner_name,
           correct=correct_answer
         )),
