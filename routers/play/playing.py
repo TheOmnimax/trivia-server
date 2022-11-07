@@ -1,7 +1,6 @@
 from typing import Dict, List, Tuple
 from domains.game.model import GameRoom
 from domains.trivia_game.services import trivia_game
-from domains.trivia_game.services.trivia_game import getPlayerNames
 from domains.trivia_game.model import TriviaGame, TriviaPlayer
 from domains.trivia_game.schemas import AdminSchema, AnswerQuestion, AnswerResponse, GameResponse,  NextRoundSchema, PlayerSchema, ResultsResponse, RoomSchema, RoundComplete, StartGame
 from gcloud_utils.datastore import GcloudMemoryStorage
@@ -57,7 +56,6 @@ async def _nextRound(game: TriviaGame, player_data: Dict[str, TriviaPlayer]):
 
 @sio.on('pregame-status')
 async def pregameStatus(sid, data):
-  print('Event: Pregame')
   data = PlayerSchema(**data)
   mem_store = dependencies.getMemoryStorage()
   player_data = _getPlayerDictFromRoomCode(room_code=data.room_code, mem_store=mem_store)
@@ -69,7 +67,6 @@ async def pregameStatus(sid, data):
 
 @sio.on('start-game')
 async def startGame(sid, data):
-  print('Event: Start game')
   data = AdminSchema(**data)
   mem_store = dependencies.getMemoryStorage()
   game_room = mem_store.get(kind='game_room', id=data.room_code, data_type=GameRoom)
@@ -111,7 +108,6 @@ async def startGame(sid, data):
 
 @sio.on('answer-question')
 async def answerQuestion(sid, data):
-  print('Event: Answer question')
   data = AnswerQuestion(**data)
   mem_store = dependencies.getMemoryStorage()
   game_id, game = _getGame(room_code=data.room_code, mem_store=mem_store)
@@ -195,14 +191,11 @@ async def answerQuestion(sid, data):
     else:
       game = tg_services.nextRound(game_id=game_id, player_ids=player_data, transaction=mem_store.transaction)
       
-      print('Sleeping')
       await sleep(1)
-      print('Done sleeping')
       await _nextRound(game, player_data)
 
 @sio.on('get-results')
 async def getResults(sid, data):
-  print('Event: Get results')
   data = RoomSchema(**data)
   mem_store = dependencies.getMemoryStorage()
   

@@ -127,8 +127,6 @@ def getRoundResults(game: TriviaGame) -> RoundData:
 
 def genWinners(game: TriviaGame):
   scores = {id:0 for id in game.players}
-  print('Generating winners')
-  print(game.round_winners)
   for id in game.round_winners:
     if id != None:
       scores[id] += 1
@@ -138,7 +136,6 @@ def genWinners(game: TriviaGame):
     game.game_winners = []
   else:
     game.game_winners = [id for id in scores if scores[id] == winning_score]
-  print(game.game_winners)
 
 def getWinnerNames(game: TriviaGame, player_data: Dict[str, TriviaPlayer]) -> List[str]:
   if game.game_winners == None:
@@ -151,8 +148,6 @@ def getWinnerNames(game: TriviaGame, player_data: Dict[str, TriviaPlayer]) -> Li
 
 def getResultsWithNames(game: TriviaGame, player_data: Dict[str, TriviaPlayer]) -> Tuple[Dict[str, str], List[str]]:
   scores = game.scores
-  print('Scores:')
-  print(scores)
   named_scores = {player_data[player_id].name:scores[player_id] for player_id in scores}
   if game.game_winners == None:
     winner_names = []
