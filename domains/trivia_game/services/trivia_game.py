@@ -33,13 +33,8 @@ def newGame(categories: List[str], question_dao: QuestionsDAO, num_rounds: int =
     num_rounds=num_rounds,
   )
 
-# TODO: QUESTION: Is there an inheritance for functions so I don't have to have the same parameters each time
-
 def addCategories(game: TriviaGame, categories: List[CategoryData]):
   game.categories += categories
-
-# def addQuestions(game: TriviaGame, questions: List[QuestionData]):
-#   game.questions += questions
 
 def addPlayer(game: TriviaGame, player_id: str):
   game.players.append(player_id)
@@ -139,7 +134,10 @@ def genWinners(game: TriviaGame):
       scores[id] += 1
   game.scores = scores
   winning_score = max([scores[id] for id in scores])
-  game.game_winners = [id for id in scores if scores[id] == winning_score]
+  if winning_score == 0:
+    game.game_winners = []
+  else:
+    game.game_winners = [id for id in scores if scores[id] == winning_score]
   print(game.game_winners)
 
 def getWinnerNames(game: TriviaGame, player_data: Dict[str, TriviaPlayer]) -> List[str]:
