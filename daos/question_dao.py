@@ -7,15 +7,41 @@ from typing import List
 
 class QuestionsDAO(DatastoreDAO):
   def __init__(self, client: datastore.Client):
+    """Initializer
+
+    Args:
+        client (datastore.Client): Google Datastore client
+    """
     self._client = client
   
   def _genUniqueKey(self):
+    """Generate unique ID for new question, and put that into a key that is used by Google Datastore. Then checks if that key already exists, and if it does, generates a new one until a key that does not exist is generated.
+
+    Returns:
+        datastore.Key: New key that can be used for a new question.
+    """
     return super()._genUniqueKey('question', 16)
   
   def _assembleKey(self, id: str) -> datastore.Key:
+    """Takes a new ID, and generates a key for the new question.
+
+    Args:
+        id (str): "name" or "ID" of new key.
+
+    Returns:
+        datastore.Key: New key in datastore.
+    """
     return super()._assembleKey('question', id)
 
   def _rawToQuestion(self, question_data_raw: datastore.Entity) -> QuestionData:
+    """Turns datastore entity into a format that is easy to use in Python
+
+    Args:
+        question_data_raw (datastore.Entity): Datastore entity with question data
+
+    Returns:
+        QuestionData: Data object that is easy to use in Python
+    """
     question_data = QuestionData(
       id=question_data_raw.key.name,
       label=question_data_raw['label'],
@@ -28,11 +54,27 @@ class QuestionsDAO(DatastoreDAO):
     return question_data
 
   def getQuestion(self, id: str) -> QuestionData:
+    """Get question data for the specified question ID
+
+    Args:
+        id (str): Question ID
+
+    Returns:
+        QuestionData: Question data that is easy to work with
+    """
     question_key = self._assembleKey(id)
     question_data_raw = self._client.get(key=question_key)
     return self._rawToQuestion(question_data_raw)
 
   def getQuestions(self, ids: List[str]) -> List[QuestionData]:
+    """Get data for multiple questions
+
+    Args:
+        ids (List[str]): IDs of quesions
+
+    Returns:
+        List[QuestionData]: List of question data objects that are easy to use in Python.
+    """
     keys = [self._client.key('question', id) for id in ids]
     question_data_raw = self._client.get_multi(keys=keys)
     return [self._rawToQuestion(data) for data in question_data_raw]
@@ -70,6 +112,11 @@ class QuestionsDAO(DatastoreDAO):
     return list(all_entities.values())
 
   def getAllQuestions(self) -> List[QuestionData]:
+    """Get all questions saved in Google Datastore, regardless of category.
+
+    Returns:
+        List[QuestionData]: List of question data objects
+    """
     query = self._client.query(kind='question')
     raw_data = list(query.fetch())
 
@@ -77,11 +124,27 @@ class QuestionsDAO(DatastoreDAO):
 
 
   def getQuestionsFromCat(self, cat_id: str) -> List[QuestionData]:
+    """Get all questions with that category
+
+    Args:
+        cat_id (str): ID of the category
+
+    Returns:
+        List[QuestionData]: List of questions with their data
+    """
     results_raw = self._getRawQuestionsFromCat(cat_id=cat_id)
     results = [self._rawToQuestion(d) for d in results_raw]
     return results
 
   def getQuestionsFromCats(self, cat_ids: List[str]) -> List[QuestionData]:
+    """Get all questions with those categories (ensuring there are no duplicates if a question has multiple categories)
+
+    Args:
+        cat_ids (List[str]): List of category IDs
+
+    Returns:
+        List[QuestionData]: List of question data
+    """
     question_data = dict()
     for id in cat_ids:
       new_data = self.getQuestionsFromCat(id)
@@ -91,8 +154,13 @@ class QuestionsDAO(DatastoreDAO):
     return list(question_data.values())
 
   def addQuestion(self, question_data: NewQuestionSchema):
+    """Adds a new question
+
+    Args:
+        question_data (NewQuestionSchema): New question data
+    """
     # existing_cats = category_dao.existsMulti(question_data.categories) # So it only adds categories that currently exist
-    # TODO: Fix whatever is going on with this
+    # TODO: Set so only adds categories that actually exist
 
     question_key = self._genUniqueKey()
     question_entity = datastore.Entity(key=question_key)
@@ -109,6 +177,11 @@ class QuestionsDAO(DatastoreDAO):
     self._client.put(question_entity)
 
   def updateQuestion(self, question_data: QuestionUpdate):
+    """Update question with new data. The "QuestionUpdate" class has all-optional parameters, so it will only update the ones that have actual data.
+
+    Args:
+        question_data (QuestionUpdate): _description_
+    """
     question_key = self._client.key('question', question_data.id)
     entity = datastore.Entity(key=question_key)
 
