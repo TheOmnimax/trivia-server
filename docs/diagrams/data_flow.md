@@ -13,8 +13,8 @@ autonumber
   activate Server
   Server-->>App: Game created: successful
   deactivate Server
-
 ```
+Note: When the app is told that the game room has been created, it will automatically then request the game itself being created, without any prompting from the user.
 
 ## Join game
 
@@ -24,6 +24,7 @@ autonumber
   App->>Server: Join game: room_code
   activate Server
   Server-->>App: Add player to room: player_id
+  Server-->>App: List of players sent to users: player_names
   deactivate Server
 ```
 
@@ -32,6 +33,9 @@ autonumber
 ```mermaid
 sequenceDiagram
 autonumber
-  App->>Server: Ask for question
-  Server-->>App: Test
+  App->>Server: Game is started by host.
+  Server-->>App: Question data sent to players.
+  App->>Server: Answer question
+  Server-->>App: Send next question when next round is ready
 ```
+
