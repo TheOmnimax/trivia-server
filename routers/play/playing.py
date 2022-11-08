@@ -26,7 +26,7 @@ def _getGame(room_code: str, mem_store: GcloudMemoryStorage) -> Tuple[str, Trivi
   return (game_id, game)
 
 def _getPlayerDict(player_ids: List[str], mem_store: GcloudMemoryStorage) -> Dict[str, TriviaPlayer]:
-  return mem_store.getMulti(kind='player', ids=player_ids, data_type=TriviaPlayer)
+  return mem_store.getMulti(kind='trivia_player', ids=player_ids, data_type=TriviaPlayer)
 
 def _getPlayerDictFromRoomCode(room_code: str, mem_store: GcloudMemoryStorage) -> Dict[str, TriviaPlayer]:
   game_id, game = _getGame(room_code=room_code, mem_store=mem_store)
@@ -148,7 +148,7 @@ async def answerQuestion(sid, data):
   round_complete = mem_store.transactionMultiKind(
     pairs=[
       ('trivia_game', game_id),
-      ('player', data.player_id)
+      ('trivia_player', data.player_id)
       ],
     new_val_func=answer_func
   )
@@ -200,7 +200,7 @@ async def getResults(sid, data):
   mem_store = dependencies.getMemoryStorage()
   
   game_id, game = _getGame(room_code=data.room_code, mem_store=mem_store)
-  player_data = mem_store.getMulti(kind='player', ids=game.players, data_type=TriviaPlayer)
+  player_data = mem_store.getMulti(kind='trivia_player', ids=game.players, data_type=TriviaPlayer)
   named_scores, winner_names = tg_services.getResultsWithNames(game=game, player_data=player_data)
   await sio.emit('get-results',
     dict(ResultsResponse(

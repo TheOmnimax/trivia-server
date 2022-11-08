@@ -102,7 +102,6 @@ def makePlayerWrong(game: TriviaGame, player: TriviaPlayer, player_id: str, sele
 
 def resetPlayer(player: TriviaPlayer):
   player.completed_round = False
-  player.time_used = 0
   player.selected_choice = -1
   player.ready = True
 
@@ -172,10 +171,9 @@ def nextRound(game_id: str, player_ids: List[str], transaction) -> TriviaGame:
     # return game.players
   
   def resetPlayer(player: TriviaPlayer):
-    player.time_used = 0
     player.selected_choice = -1
     player.completed_round = False
   
   for p in player_ids:
-    transaction(kind='player', id=p, new_val_func=resetPlayer)
+    transaction(kind='trivia_player', id=p, new_val_func=resetPlayer)
   return transaction(kind='trivia_game', id=game_id, new_val_func=resetGameTime)
