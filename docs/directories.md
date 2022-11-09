@@ -1,5 +1,7 @@
 # Directories
 
+These are the directories (folders) used in this server.
+
 ## constants
 
 Constants used throughout the server. Currently just has a list of accepted origins.
