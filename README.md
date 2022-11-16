@@ -14,11 +14,21 @@ For playing, WebSockets are used through Socket.io to connect to clients and com
 
 Documentation files can be found in [this folder](https://github.com/TheOmnimax/trivia-server/tree/main/docs).
 
-**[data_flow](https://github.com/TheOmnimax/trivia-server/blob/cleanup/docs/data_flow.md)**: Graphs describing the data workflow.
+**[data_flow](https://github.com/TheOmnimax/trivia-server/blob/main/docs/data_flow.md)**: Graphs describing the data workflow.
 
-**[directories](https://github.com/TheOmnimax/trivia-server/blob/cleanup/docs/directories.md)**: Overview of the (directories) folders used in this server.
+**[directories](https://github.com/TheOmnimax/trivia-server/blob/main/docs/directories.md)**: Overview of the (directories) folders used in this server.
 
-**[entities](https://github.com/TheOmnimax/trivia-server/blob/cleanup/docs/directories.md)**: Descriptions of the Google Datastore entities used, including their properties.
+**[entities](https://github.com/TheOmnimax/trivia-server/blob/main/docs/directories.md)**: Descriptions of the Google Datastore entities used, including their properties.
+
+## System diagram
+
+```mermaid
+graph LR
+  Client--WebSocket<br>from client-->Internet
+  Internet--WebSocket<br>from client-->Server
+  Server--WebSocket<br>from server-->Internet
+  Internet--WebSocket<br>from server-->Client
+```
 
 ## Future improvements
 
