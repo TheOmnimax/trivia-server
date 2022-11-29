@@ -10,6 +10,8 @@ For management, it uses Flask to create a REST API. That REST API can be used to
 
 For playing, WebSockets are used through Socket.io to connect to clients and communicate in order to play the game.
 
+It is hosted using Google App Engine.
+
 ## Documentation files
 
 Documentation files can be found in [this folder](https://github.com/TheOmnimax/trivia-server/tree/main/docs).
