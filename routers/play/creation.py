@@ -19,7 +19,7 @@ async def createRoom(sid, data):
   data = CreateRoomSchema(**data)
   mem_store = dependencies.getMemoryStorage()
   host_player = tg_services.createTriviaPlayer(name=data.host_name, sid=sid)
-  host_id = mem_store.create(kind='player', data=host_player)
+  host_id = mem_store.create(kind='trivia_player', data=host_player)
   game_room = game_services.createGameRoom(host_id=host_id)
   room_code = mem_store.create(kind='game_room', data=game_room)
   await sio.emit('create-room', data=dict(CreateRoomResponse(
@@ -77,7 +77,7 @@ async def addPlayer(sid, data):
   data = JoinGameSchema(**data)
   mem_store = dependencies.getMemoryStorage()
   new_player = tg_services.createTriviaPlayer(name=data.player_name, sid=sid)
-  player_id = mem_store.create(kind='player', data=new_player)
+  player_id = mem_store.create(kind='trivia_player', data=new_player)
 
   def addMember(game_room: GameRoom):
     game_room.members.append(player_id)

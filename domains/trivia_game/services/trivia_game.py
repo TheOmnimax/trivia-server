@@ -33,13 +33,8 @@ def newGame(categories: List[str], question_dao: QuestionsDAO, num_rounds: int =
     num_rounds=num_rounds,
   )
 
-# TODO: QUESTION: Is there an inheritance for functions so I don't have to have the same parameters each time
-
 def addCategories(game: TriviaGame, categories: List[CategoryData]):
   game.categories += categories
-
-# def addQuestions(game: TriviaGame, questions: List[QuestionData]):
-#   game.questions += questions
 
 def addPlayer(game: TriviaGame, player_id: str):
   game.players.append(player_id)
@@ -107,7 +102,6 @@ def makePlayerWrong(game: TriviaGame, player: TriviaPlayer, player_id: str, sele
 
 def resetPlayer(player: TriviaPlayer):
   player.completed_round = False
-  player.time_used = 0
   player.selected_choice = -1
   player.ready = True
 
@@ -122,6 +116,7 @@ def completeRound(game: TriviaGame):
     game.complete_players = set()
     if game.question_index + 1 >= len(game.questions): # Game is complete
       game.game_complete = True
+      game.question_index = -1 # This is to make sure no one else can answer questions
       genWinners(game)
     pass
 
@@ -131,15 +126,15 @@ def getRoundResults(game: TriviaGame) -> RoundData:
 
 def genWinners(game: TriviaGame):
   scores = {id:0 for id in game.players}
-  print('Generating winners')
-  print(game.round_winners)
   for id in game.round_winners:
     if id != None:
       scores[id] += 1
   game.scores = scores
   winning_score = max([scores[id] for id in scores])
-  game.game_winners = [id for id in scores if scores[id] == winning_score]
-  print(game.game_winners)
+  if winning_score == 0:
+    game.game_winners = []
+  else:
+    game.game_winners = [id for id in scores if scores[id] == winning_score]
 
 def getWinnerNames(game: TriviaGame, player_data: Dict[str, TriviaPlayer]) -> List[str]:
   if game.game_winners == None:
@@ -152,8 +147,6 @@ def getWinnerNames(game: TriviaGame, player_data: Dict[str, TriviaPlayer]) -> Li
 
 def getResultsWithNames(game: TriviaGame, player_data: Dict[str, TriviaPlayer]) -> Tuple[Dict[str, str], List[str]]:
   scores = game.scores
-  print('Scores:')
-  print(scores)
   named_scores = {player_data[player_id].name:scores[player_id] for player_id in scores}
   if game.game_winners == None:
     winner_names = []
@@ -178,10 +171,9 @@ def nextRound(game_id: str, player_ids: List[str], transaction) -> TriviaGame:
     # return game.players
   
   def resetPlayer(player: TriviaPlayer):
-    player.time_used = 0
     player.selected_choice = -1
     player.completed_round = False
   
   for p in player_ids:
-    transaction(kind='player', id=p, new_val_func=resetPlayer)
+    transaction(kind='trivia_player', id=p, new_val_func=resetPlayer)
   return transaction(kind='trivia_game', id=game_id, new_val_func=resetGameTime)

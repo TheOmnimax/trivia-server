@@ -59,6 +59,7 @@ class GetQuestionSchema(RoomSchema):
 
 class AnswerQuestion(PlayerSchema):
   answer: int # index of the question selected
+  round: int # Round number question is being answered for # IMPLEMENT
 
 class AnswerResponse(BaseModel):
   player_correct: bool
@@ -84,6 +85,7 @@ class PlayerCheckinResponse(BaseModel):
   is_winner: Optional[bool]
 
 class NextRoundSchema(BaseModel):
+  round_num: int # Which round it is on
   question: str
   choices: List[str]
 

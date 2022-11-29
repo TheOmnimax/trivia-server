@@ -5,12 +5,12 @@ class DatastoreDAO:
   def __init__(self, client: datastore.Client):
     self._client = client
   
-  def _genKey(self, kind: str, size: int):
+  def _genKey(self, kind: str, size: int) -> datastore.Key:
     id = genCode(size)
     return self._client.key(kind, id)
   
   
-  def _genUniqueKey(self, kind: str, size: int):
+  def _genUniqueKey(self, kind: str, size: int) -> datastore.Key:
     key = self._genKey(kind, size)
     data = self._client.get(key)
     while data != None:
