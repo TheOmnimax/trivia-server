@@ -12,6 +12,8 @@ For playing, WebSockets are used through Socket.io to connect to clients and com
 
 It is hosted using Google App Engine.
 
+Note: Since this server uses WebSockets, which require a [flexible environment](https://cloud.google.com/appengine/docs/the-appengine-environments) that can get expensive, it is not currently deployed. It can be re-deploloyed as needed.
+
 ## Documentation files
 
 Documentation files can be found in [this folder](https://github.com/TheOmnimax/trivia-server/tree/main/docs).
